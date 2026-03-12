@@ -20,6 +20,20 @@
 export SECRET_KEY="change-me"
 uvicorn app.main:app --reload
 
+## Run with Docker
+
+docker compose up --build
+
+App will be available at `http://localhost:8000`.
+
+## Run with Docker (Production Profile)
+
+docker compose --profile prod up --build
+
+Notes:
+- Set a strong `SECRET_KEY` for production.
+- SQLite is fine for demos; use a managed DB for real workloads.
+
 ## Run Unit Tests
 
 pytest

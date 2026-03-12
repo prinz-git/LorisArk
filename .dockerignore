@@ -1,6 +1,4 @@
 .DS_Store
-
-# Python
 __pycache__/
 *.pyc
 .pytest_cache/
@@ -13,18 +11,17 @@ htmlcov/
 .env
 .env.*
 
-# Databases
 *.db
 *.sqlite
 *.sqlite3
 data/
 
-# Node / Playwright
 node_modules/
 qa/node_modules/
 qa/playwright-report/
 qa/test-results/
 
-# Build artifacts
 dist/
 build/
+tests/
+qa/

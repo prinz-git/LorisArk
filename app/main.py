@@ -9,6 +9,10 @@ def create_app() -> FastAPI:
     app = FastAPI(title=settings.APP_NAME)
     app.include_router(api_router)
 
+    @app.get("/health")
+    def health() -> dict:
+        return {"status": "ok"}
+
     @app.on_event("startup")
     def _create_tables() -> None:
         Base.metadata.create_all(bind=engine)
