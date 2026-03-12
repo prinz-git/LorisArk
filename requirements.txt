@@ -1,0 +1,11 @@
+fastapi
+uvicorn
+sqlalchemy
+python-jose
+passlib[bcrypt]
+pydantic
+pytest
+pytest-cov
+email-validator
+bcrypt==4.3.0
+playwright
