@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>LorisArk • User Management</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,500;9..144,700&family=Space+Grotesk:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <div class="orb orb--one" aria-hidden="true"></div>
+    <div class="orb orb--two" aria-hidden="true"></div>
+    <div class="orb orb--three" aria-hidden="true"></div>
+
+    <header class="site-header" data-reveal>
+      <div class="logo">LorisArk</div>
+      <nav class="nav">
+        <button class="ghost" id="scroll-auth">Access</button>
+        <button class="ghost" id="scroll-dashboard">Dashboard</button>
+      </nav>
+    </header>
+
+    <main class="page">
+      <section class="hero" data-reveal>
+        <div class="hero-text">
+          <p class="eyebrow">FastAPI User Suite</p>
+          <h1>Modern identity flows with a calm, confident UI.</h1>
+          <p class="lead">
+            Register, sign in, and manage profiles with JWT security. Built for teams
+            that want a crisp admin experience without the clutter.
+          </p>
+          <div class="hero-actions">
+            <button class="primary" id="cta-start">Get Started</button>
+            <button class="secondary" id="cta-docs">API Status</button>
+          </div>
+          <div class="meta">
+            <div>
+              <span class="meta-label">Auth</span>
+              <span class="meta-value">JWT</span>
+            </div>
+            <div>
+              <span class="meta-label">Database</span>
+              <span class="meta-value">SQLite</span>
+            </div>
+            <div>
+              <span class="meta-label">Framework</span>
+              <span class="meta-value">FastAPI</span>
+            </div>
+          </div>
+        </div>
+        <div class="hero-card" id="auth-panel" data-reveal>
+          <div class="card-header">
+            <h2>Access Portal</h2>
+            <p>Sign in or create a new account in seconds.</p>
+          </div>
+          <div class="tabs">
+            <button class="tab active" data-tab="login">Login</button>
+            <button class="tab" data-tab="register">Register</button>
+          </div>
+          <form class="panel" id="login-panel">
+            <label>
+              Email
+              <input type="email" name="login-email" placeholder="you@example.com" required />
+            </label>
+            <label>
+              Password
+              <input type="password" name="login-password" placeholder="••••••••" required />
+            </label>
+            <button class="primary" type="submit">Sign In</button>
+          </form>
+          <form class="panel hidden" id="register-panel">
+            <label>
+              Full name
+              <input type="text" name="register-name" placeholder="Alex Morgan" required />
+            </label>
+            <label>
+              Email
+              <input type="email" name="register-email" placeholder="you@example.com" required />
+            </label>
+            <label>
+              Password
+              <input type="password" name="register-password" placeholder="Create a password" required />
+            </label>
+            <button class="primary" type="submit">Create Account</button>
+          </form>
+        </div>
+      </section>
+
+      <section class="dashboard" id="dashboard" data-reveal>
+        <div class="section-header">
+          <div>
+            <p class="eyebrow">Account</p>
+            <h2>Profile & Admin Console</h2>
+          </div>
+          <div class="session">
+            <span id="session-email">Not signed in</span>
+            <button class="ghost" id="logout">Logout</button>
+          </div>
+        </div>
+
+        <div class="grid">
+          <div class="card">
+            <h3>Your Profile</h3>
+            <p class="card-sub">Review and keep your personal details sharp.</p>
+            <div class="profile" id="profile-output">
+              <p class="muted">Sign in to see your profile details.</p>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3>Update Profile</h3>
+            <p class="card-sub">Change your display name or reset your password.</p>
+            <form id="profile-form" class="stack">
+              <label>
+                Full name
+                <input type="text" name="profile-name" placeholder="Update full name" required />
+              </label>
+              <label>
+                New password
+                <input type="password" name="profile-password" placeholder="Optional" />
+              </label>
+              <button class="primary" type="submit">Save Changes</button>
+            </form>
+          </div>
+
+          <div class="card">
+            <h3>Users Directory</h3>
+            <p class="card-sub">View and manage all registered users.</p>
+            <div class="users" id="users-list">
+              <p class="muted">Sign in to load users.</p>
+            </div>
+          </div>
+
+          <div class="card danger">
+            <h3>Close Account</h3>
+            <p class="card-sub">Delete your user profile permanently.</p>
+            <button class="secondary" id="delete-account">Delete My Account</button>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+    <script src="/static/app.js"></script>
+  </body>
+</html>

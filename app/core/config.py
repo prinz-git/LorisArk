@@ -10,6 +10,8 @@ class Settings:
         self.DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./users.db")
         self.ALGORITHM = os.getenv("ALGORITHM", "HS256")
         self.ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "60"))
+        origins = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000")
+        self.ALLOWED_ORIGINS = [origin.strip() for origin in origins.split(",") if origin.strip()]
 
         secret_key = os.getenv("SECRET_KEY")
         if not secret_key:
