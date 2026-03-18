@@ -1,5 +1,6 @@
 import { Page } from "@playwright/test";
 import { BasePage } from "./BasePage";
+import { testIds } from "../testIds";
 
 export class ProfilePage extends BasePage {
   constructor(page: Page) {
@@ -11,16 +12,16 @@ export class ProfilePage extends BasePage {
   }
 
   async assertReady() {
-    await this.expectHeading("Edit Profile");
+    await this.page.getByTestId(testIds.profile.title).waitFor({ state: "visible" });
   }
 
   async updateName(fullName: string) {
-    await this.page.getByLabel("Full Name").fill(fullName);
-    await this.page.getByRole("button", { name: "Save Changes" }).click();
+    await this.page.getByTestId(testIds.profile.fullnameInput).fill(fullName);
+    await this.page.getByTestId(testIds.profile.saveButton).click();
   }
 
   async deleteAccount() {
     this.acceptNextDialog();
-    await this.page.getByRole("button", { name: "Delete Account" }).click();
+    await this.page.getByTestId(testIds.profile.deleteButton).click();
   }
 }

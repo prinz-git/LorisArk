@@ -9,6 +9,7 @@ import { DashboardPage } from "../../ui/pages/DashboardPage";
 import { UsersPage } from "../../ui/pages/UsersPage";
 import { ProfilePage } from "../../ui/pages/ProfilePage";
 import { LandingPage } from "../../ui/pages/LandingPage";
+import { testIds } from "../../ui/testIds";
 
 test.describe("User E2E journey", () => {
   test.use({ baseURL: ENV.UI_BASE_URL });
@@ -31,6 +32,7 @@ test.describe("User E2E journey", () => {
 
     const seeded = await seedUser();
     const secondaryUser = seeded.user;
+    const secondaryUserId = seeded.id;
     cleanupTasks.push(seeded.cleanup);
 
     const register = new RegisterPage(page);
@@ -49,7 +51,11 @@ test.describe("User E2E journey", () => {
         primaryUser.password
       );
 
-      await expectToast(page, "Account created. Please log in.");
+      await expectToast(
+        page,
+        "Account created. Please log in.",
+        testIds.register.toast
+      );
       await page.waitForURL("**/login");
     });
 
@@ -66,14 +72,15 @@ test.describe("User E2E journey", () => {
       await users.assertReady();
 
       const updatedName = `${secondaryUser.full_name} Updated`;
-      await users.editUser(secondaryUser.email, updatedName);
-      await expectToast(page, "User updated.");
+      await users.editUser(secondaryUserId, updatedName);
+      await expectToast(page, "User updated.", testIds.editUser.toast);
+      await users.backToListFromEdit();
     });
 
     await test.step("Delete the edited user from the list", async () => {
-      await users.deleteUser(secondaryUser.email);
-      await expectToast(page, "User deleted.");
-      await users.assertUserAbsent(secondaryUser.email);
+      await users.deleteUser(secondaryUserId);
+      await expectToast(page, "User deleted.", testIds.users.toast);
+      await users.assertUserAbsent(secondaryUserId);
     });
 
     await test.step("Update profile details", async () => {
@@ -82,7 +89,7 @@ test.describe("User E2E journey", () => {
 
       const updatedProfileName = `${primaryUser.full_name} Edited`;
       await profile.updateName(updatedProfileName);
-      await expectToast(page, "Profile updated.");
+      await expectToast(page, "Profile updated.", testIds.profile.toast);
     });
 
     await test.step("Delete the logged-in user from profile", async () => {

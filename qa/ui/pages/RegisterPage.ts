@@ -1,5 +1,6 @@
 import { Page } from "@playwright/test";
 import { BasePage } from "./BasePage";
+import { testIds } from "../testIds";
 
 export class RegisterPage extends BasePage {
   constructor(page: Page) {
@@ -11,13 +12,15 @@ export class RegisterPage extends BasePage {
   }
 
   async assertReady() {
-    await this.expectHeading("Create Account");
+    await this.page
+      .getByTestId(testIds.register.title)
+      .waitFor({ state: "visible" });
   }
 
   async register(fullName: string, email: string, password: string) {
-    await this.page.getByLabel("Full Name").fill(fullName);
-    await this.page.getByLabel("Email").fill(email);
-    await this.page.getByLabel("Password").fill(password);
-    await this.page.getByRole("button", { name: "Register" }).click();
+    await this.page.getByTestId(testIds.register.fullnameInput).fill(fullName);
+    await this.page.getByTestId(testIds.register.emailInput).fill(email);
+    await this.page.getByTestId(testIds.register.passwordInput).fill(password);
+    await this.page.getByTestId(testIds.register.submitButton).click();
   }
 }

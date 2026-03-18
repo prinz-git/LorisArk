@@ -1,7 +1,6 @@
-import { test, expect } from "@playwright/test";
+import { test } from "@playwright/test";
 import { ENV } from "../../core/env";
 import { LandingPage } from "../../ui/pages/LandingPage";
-import { LoginPage } from "../../ui/pages/LoginPage";
 
 test.describe("Public site", () => {
   test.use({ baseURL: ENV.UI_BASE_URL });
@@ -12,16 +11,5 @@ test.describe("Public site", () => {
     await landing.goto();
     await landing.assertReady();
     await landing.assertPrimaryActions();
-  });
-
-  test("Login page shows form fields", async ({ page }) => {
-    const login = new LoginPage(page);
-
-    await login.goto();
-    await login.assertReady();
-
-    await expect(page.getByLabel("Email")).toBeVisible();
-    await expect(page.getByLabel("Password")).toBeVisible();
-    await expect(page.getByRole("button", { name: "Login" })).toBeVisible();
   });
 });

@@ -1,5 +1,6 @@
 import { Page } from "@playwright/test";
 import { BasePage } from "./BasePage";
+import { testIds } from "../testIds";
 
 export class LoginPage extends BasePage {
   constructor(page: Page) {
@@ -11,12 +12,12 @@ export class LoginPage extends BasePage {
   }
 
   async assertReady() {
-    await this.expectHeading("Login");
+    await this.page.getByTestId(testIds.login.title).waitFor({ state: "visible" });
   }
 
   async login(email: string, password: string) {
-    await this.page.getByLabel("Email").fill(email);
-    await this.page.getByLabel("Password").fill(password);
-    await this.page.getByRole("button", { name: "Login" }).click();
+    await this.page.getByTestId(testIds.login.emailInput).fill(email);
+    await this.page.getByTestId(testIds.login.passwordInput).fill(password);
+    await this.page.getByTestId(testIds.login.submitButton).click();
   }
 }

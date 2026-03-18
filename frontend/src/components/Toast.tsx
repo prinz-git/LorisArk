@@ -35,6 +35,7 @@ export default function Toast({
         className || ""
       }`}
       role="status"
+      data-testid="toast"
       {...rest}
     >
       {message}
