@@ -1,96 +1,94 @@
-import { test, expect } from "@playwright/test";
-import { APIClient } from "../../core/APIClient";
-import { AuthAPI } from "../../api/AuthAPI";
+import { test } from "@playwright/test";
 import { createUser } from "../../data/userFactory";
-
-const UI_BASE_URL = process.env.UI_BASE_URL || "http://localhost:3000";
-
-const expectToast = async (page: { getByRole: any }, message: string) => {
-  await expect(page.getByRole("status")).toHaveText(message);
-};
+import { seedUser } from "../../data/testData";
+import { ENV } from "../../core/env";
+import { expectToast } from "../../ui/components/toast";
+import { RegisterPage } from "../../ui/pages/RegisterPage";
+import { LoginPage } from "../../ui/pages/LoginPage";
+import { DashboardPage } from "../../ui/pages/DashboardPage";
+import { UsersPage } from "../../ui/pages/UsersPage";
+import { ProfilePage } from "../../ui/pages/ProfilePage";
+import { LandingPage } from "../../ui/pages/LandingPage";
 
 test.describe("User E2E journey", () => {
-  test.use({ baseURL: UI_BASE_URL });
+  test.use({ baseURL: ENV.UI_BASE_URL });
+
+  const cleanupTasks: Array<() => Promise<void>> = [];
+
+  test.afterEach(async () => {
+    while (cleanupTasks.length > 0) {
+      const cleanup = cleanupTasks.pop();
+      if (cleanup) {
+        await cleanup();
+      }
+    }
+  });
 
   test("registers, logs in, manages users, updates profile, and deletes account", async ({
     page,
   }) => {
     const primaryUser = createUser();
-    const secondaryUser = createUser();
 
-    await test.step("Seed a secondary user via API", async () => {
-      const request = await APIClient.create();
-      const auth = new AuthAPI(request);
-      const response = await auth.register(secondaryUser);
-      expect(response.status()).toBe(200);
-    });
+    const seeded = await seedUser();
+    const secondaryUser = seeded.user;
+    cleanupTasks.push(seeded.cleanup);
+
+    const register = new RegisterPage(page);
+    const login = new LoginPage(page);
+    const dashboard = new DashboardPage(page);
+    const users = new UsersPage(page);
+    const profile = new ProfilePage(page);
+    const landing = new LandingPage(page);
 
     await test.step("Register a new user via UI", async () => {
-      await page.goto("/register");
-      await expect(page.getByRole("heading", { name: "Create Account" })).toBeVisible();
-
-      await page.getByLabel("Full Name").fill(primaryUser.full_name);
-      await page.getByLabel("Email").fill(primaryUser.email);
-      await page.getByLabel("Password").fill(primaryUser.password);
-      await page.getByRole("button", { name: "Register" }).click();
+      await register.goto();
+      await register.assertReady();
+      await register.register(
+        primaryUser.full_name,
+        primaryUser.email,
+        primaryUser.password
+      );
 
       await expectToast(page, "Account created. Please log in.");
       await page.waitForURL("**/login");
     });
 
     await test.step("Login as the registered user", async () => {
-      await expect(page.getByRole("heading", { name: "Login" })).toBeVisible();
-      await page.getByLabel("Email").fill(primaryUser.email);
-      await page.getByLabel("Password").fill(primaryUser.password);
-      await page.getByRole("button", { name: "Login" }).click();
+      await login.assertReady();
+      await login.login(primaryUser.email, primaryUser.password);
 
       await page.waitForURL("**/dashboard");
-      await expect(page.getByRole("heading", { name: /Hello,/ })).toBeVisible();
+      await dashboard.assertWelcome();
     });
 
     await test.step("Edit another user from the list", async () => {
-      await page.goto("/users");
-      await expect(page.getByRole("heading", { name: "User Listing" })).toBeVisible();
+      await users.goto();
+      await users.assertReady();
 
-      const row = page.getByText(secondaryUser.email).locator("..");
-      await row.getByRole("link", { name: "Edit" }).click();
-
-      await expect(page.getByRole("heading", { name: "Edit User" })).toBeVisible();
       const updatedName = `${secondaryUser.full_name} Updated`;
-      await page.getByLabel("Full Name").fill(updatedName);
-      await page.getByRole("button", { name: "Save Changes" }).click();
-
+      await users.editUser(secondaryUser.email, updatedName);
       await expectToast(page, "User updated.");
-      await page.getByRole("link", { name: "Back" }).click();
-      await expect(page.getByRole("heading", { name: "User Listing" })).toBeVisible();
     });
 
     await test.step("Delete the edited user from the list", async () => {
-      const row = page.getByText(secondaryUser.email).locator("..");
-      page.once("dialog", (dialog) => dialog.accept());
-      await row.getByRole("button", { name: "Delete" }).click();
-
+      await users.deleteUser(secondaryUser.email);
       await expectToast(page, "User deleted.");
-      await expect(page.getByText(secondaryUser.email)).toHaveCount(0);
+      await users.assertUserAbsent(secondaryUser.email);
     });
 
     await test.step("Update profile details", async () => {
-      await page.goto("/profile");
-      await expect(page.getByRole("heading", { name: "Edit Profile" })).toBeVisible();
+      await profile.goto();
+      await profile.assertReady();
 
       const updatedProfileName = `${primaryUser.full_name} Edited`;
-      await page.getByLabel("Full Name").fill(updatedProfileName);
-      await page.getByRole("button", { name: "Save Changes" }).click();
-
+      await profile.updateName(updatedProfileName);
       await expectToast(page, "Profile updated.");
     });
 
     await test.step("Delete the logged-in user from profile", async () => {
-      page.once("dialog", (dialog) => dialog.accept());
-      await page.getByRole("button", { name: "Delete Account" }).click();
-
+      await profile.deleteAccount();
       await page.waitForURL("**/");
-      await expect(page.getByRole("heading", { name: "User Management App" })).toBeVisible();
+      await landing.assertReady();
     });
   });
 });

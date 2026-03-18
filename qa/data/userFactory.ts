@@ -1,10 +1,16 @@
-export function createUser() {
+export type User = {
+  email: string;
+  password: string;
+  full_name: string;
+};
 
-  const random = Math.floor(Math.random() * 100000);
+export function createUser(overrides: Partial<User> = {}): User {
+  const unique = `${Date.now()}${Math.floor(Math.random() * 10000)}`;
 
   return {
-    email: `user${random}@test.com`,
+    email: `user${unique}@test.com`,
     password: "123456",
-    full_name: "Playwright Test User"
+    full_name: "Playwright Test User",
+    ...overrides,
   };
 }

@@ -1,39 +1,25 @@
 import { test, expect } from "@playwright/test";
-
-const UI_BASE_URL = process.env.UI_BASE_URL || "http://localhost:3000";
+import { ENV } from "../../core/env";
+import { LandingPage } from "../../ui/pages/LandingPage";
+import { LoginPage } from "../../ui/pages/LoginPage";
 
 test.describe("Public site", () => {
-  test.use({ baseURL: UI_BASE_URL });
+  test.use({ baseURL: ENV.UI_BASE_URL });
 
   test("Landing page loads with primary actions", async ({ page }) => {
-    await page.goto("/");
-    await expect(page.getByRole("heading", { name: "User Management App" })).toBeVisible();
+    const landing = new LandingPage(page);
 
-    const headerNav = page.getByRole("navigation");
-    await expect(headerNav.getByRole("link", { name: "Login" })).toHaveAttribute(
-      "href",
-      "/login",
-    );
-    await expect(headerNav.getByRole("link", { name: "Register" })).toHaveAttribute(
-      "href",
-      "/register",
-    );
-
-    const hero = page.getByRole("main");
-    await expect(hero.getByRole("link", { name: "Login" })).toHaveAttribute(
-      "href",
-      "/login",
-    );
-    await expect(hero.getByRole("link", { name: "Register" })).toHaveAttribute(
-      "href",
-      "/register",
-    );
+    await landing.goto();
+    await landing.assertReady();
+    await landing.assertPrimaryActions();
   });
 
   test("Login page shows form fields", async ({ page }) => {
-    await page.goto("/login");
+    const login = new LoginPage(page);
 
-    await expect(page.getByRole("heading", { name: "Login" })).toBeVisible();
+    await login.goto();
+    await login.assertReady();
+
     await expect(page.getByLabel("Email")).toBeVisible();
     await expect(page.getByLabel("Password")).toBeVisible();
     await expect(page.getByRole("button", { name: "Login" })).toBeVisible();
