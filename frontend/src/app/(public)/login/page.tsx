@@ -6,6 +6,7 @@ import { useState } from "react";
 import Toast from "@/components/Toast";
 import { apiFetch } from "@/lib/api";
 import { setToken } from "@/lib/auth";
+import { testIds } from "@/lib/testids";
 import styles from "./page.module.css";
 
 export default function LoginPage() {
@@ -31,16 +32,21 @@ export default function LoginPage() {
   };
 
   return (
-    <div className={styles.wrap}>
-      <div className={styles.card}>
-        <h1>Login</h1>
+    <div className={styles.wrap} data-testid={testIds.login.page}>
+      <div className={styles.card} data-testid={testIds.login.card}>
+        <h1 data-testid={testIds.login.title}>Login</h1>
         <p className={styles.subtitle}>Access your management workspace.</p>
-        <form className={styles.form} onSubmit={submit}>
+        <form
+          className={styles.form}
+          data-testid={testIds.login.form}
+          onSubmit={submit}
+        >
           <label className={styles.label}>
             Email
             <input
               type="email"
               placeholder="you@example.com"
+              data-testid={testIds.login.emailInput}
               value={email}
               onChange={(event) => setEmail(event.target.value)}
               required
@@ -51,20 +57,33 @@ export default function LoginPage() {
             <input
               type="password"
               placeholder="••••••••"
+              data-testid={testIds.login.passwordInput}
               value={password}
               onChange={(event) => setPassword(event.target.value)}
               required
             />
           </label>
-          <button className={styles.primary} type="submit">
+          <button
+            className={styles.primary}
+            type="submit"
+            data-testid={testIds.login.submitButton}
+          >
             Login
           </button>
         </form>
-        <div className={styles.meta}>
-          <Link href="/register" className={styles.secondary}>
+        <div className={styles.meta} data-testid={testIds.login.meta}>
+          <Link
+            href="/register"
+            className={styles.secondary}
+            data-testid={testIds.login.registerLink}
+          >
             Register
           </Link>
-          <button className={styles.textButton} type="button">
+          <button
+            className={styles.textButton}
+            type="button"
+            data-testid={testIds.login.forgotButton}
+          >
             Forgot password
           </button>
         </div>
@@ -73,6 +92,7 @@ export default function LoginPage() {
         message={toast.message || null}
         tone={toast.tone === "error" ? "error" : "success"}
         onClear={() => setToast({ message: "" })}
+        data-testid={testIds.login.toast}
       />
     </div>
   );

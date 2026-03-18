@@ -1,15 +1,22 @@
 "use client";
 
 import { useEffect } from "react";
+import type { HTMLAttributes } from "react";
 import styles from "./Toast.module.css";
 
-type ToastProps = {
+type ToastProps = HTMLAttributes<HTMLDivElement> & {
   message: string | null;
   tone?: "success" | "error";
   onClear: () => void;
 };
 
-export default function Toast({ message, tone = "success", onClear }: ToastProps) {
+export default function Toast({
+  message,
+  tone = "success",
+  onClear,
+  className,
+  ...rest
+}: ToastProps) {
   useEffect(() => {
     if (!message) {
       return;
@@ -24,8 +31,11 @@ export default function Toast({ message, tone = "success", onClear }: ToastProps
 
   return (
     <div
-      className={`${styles.toast} ${tone === "error" ? styles.error : ""}`}
+      className={`${styles.toast} ${tone === "error" ? styles.error : ""} ${
+        className || ""
+      }`}
       role="status"
+      {...rest}
     >
       {message}
     </div>

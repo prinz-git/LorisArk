@@ -6,6 +6,7 @@ import { useParams, useRouter } from "next/navigation";
 import Toast from "@/components/Toast";
 import { apiFetch } from "@/lib/api";
 import { getToken } from "@/lib/auth";
+import { testIds } from "@/lib/testids";
 import styles from "./page.module.css";
 
 type User = {
@@ -64,28 +65,47 @@ export default function EditUserPage() {
   };
 
   return (
-    <div className={styles.page}>
-      <div className={styles.card}>
-        <h1>Edit User</h1>
+    <div className={styles.page} data-testid={testIds.editUser.page}>
+      <div className={styles.card} data-testid={testIds.editUser.card}>
+        <h1 data-testid={testIds.editUser.title}>Edit User</h1>
         <p className={styles.subtitle}>Update user details with admin access.</p>
-        <form className={styles.form} onSubmit={(event) => event.preventDefault()}>
+        <form
+          className={styles.form}
+          data-testid={testIds.editUser.form}
+          onSubmit={(event) => event.preventDefault()}
+        >
           <label className={styles.label}>
             Full Name
             <input
               type="text"
+              data-testid={testIds.editUser.fullnameInput}
               value={fullName}
               onChange={(event) => setFullName(event.target.value)}
             />
           </label>
           <label className={styles.label}>
             Email
-            <input type="email" value={user?.email || ""} readOnly />
+            <input
+              type="email"
+              data-testid={testIds.editUser.emailInput}
+              value={user?.email || ""}
+              readOnly
+            />
           </label>
-          <div className={styles.actions}>
-            <button className={styles.primary} type="button" onClick={save}>
+          <div className={styles.actions} data-testid={testIds.editUser.actions}>
+            <button
+              className={styles.primary}
+              type="button"
+              data-testid={testIds.editUser.saveButton}
+              onClick={save}
+            >
               Save Changes
             </button>
-            <Link href="/users" className={styles.textButton}>
+            <Link
+              href="/users"
+              className={styles.textButton}
+              data-testid={testIds.editUser.backLink}
+            >
               Back
             </Link>
           </div>
@@ -95,6 +115,7 @@ export default function EditUserPage() {
         message={toast.message || null}
         tone={toast.tone === "error" ? "error" : "success"}
         onClear={() => setToast({ message: "" })}
+        data-testid={testIds.editUser.toast}
       />
     </div>
   );
