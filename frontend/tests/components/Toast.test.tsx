@@ -1,14 +1,16 @@
-import { render, screen } from "../utils/render";
-import { act } from "react-dom/test-utils";
+import { act, render, screen } from "../utils/render";
 import Toast from "../../src/components/Toast";
 
 describe("Toast", () => {
-  beforeEach(() => {
+  beforeAll(() => {
     jest.useFakeTimers();
   });
 
   afterEach(() => {
-    jest.runOnlyPendingTimers();
+    jest.clearAllTimers();
+  });
+
+  afterAll(() => {
     jest.useRealTimers();
   });
 
@@ -30,5 +32,10 @@ describe("Toast", () => {
     });
 
     expect(onClear).toHaveBeenCalledTimes(1);
+  });
+
+  it("passes through data-testid for targeting", () => {
+    render(<Toast message="Saved!" onClear={jest.fn()} data-testid="toast" />);
+    expect(screen.getByTestId("toast")).toHaveTextContent("Saved!");
   });
 });

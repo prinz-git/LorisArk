@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import Toast from "@/components/Toast";
 import { apiFetch } from "@/lib/api";
 import { getToken } from "@/lib/auth";
+import { testIdBuilders, testIds } from "@/lib/testids";
 import styles from "./page.module.css";
 
 type User = {
@@ -69,23 +70,26 @@ export default function UsersPage() {
   };
 
   return (
-    <div className={styles.page}>
-      <header className={styles.header}>
+    <div className={styles.page} data-testid={testIds.users.page}>
+      <header className={styles.header} data-testid={testIds.users.header}>
         <div>
-          <p className={styles.eyebrow}>Users</p>
-          <h1>User Listing</h1>
+          <p className={styles.eyebrow} data-testid={testIds.users.eyebrow}>
+            Users
+          </p>
+          <h1 data-testid={testIds.users.title}>User Listing</h1>
         </div>
         <input
           className={styles.search}
           type="search"
           placeholder="Search users"
+          data-testid={testIds.users.searchInput}
           value={search}
           onChange={(event) => setSearch(event.target.value)}
         />
       </header>
 
-      <div className={styles.table}>
-        <div className={styles.rowHeader}>
+      <div className={styles.table} data-testid={testIds.users.table}>
+        <div className={styles.rowHeader} data-testid={testIds.users.rowHeader}>
           <span>ID</span>
           <span>Name</span>
           <span>Email</span>
@@ -95,17 +99,30 @@ export default function UsersPage() {
           <div
             key={user.id}
             className={`${styles.row} ${index % 2 === 0 ? styles.rowAlt : ""}`}
+            data-testid={testIdBuilders.usersRow(user.id)}
           >
-            <span>{user.id}</span>
-            <span>{user.full_name}</span>
-            <span>{user.email}</span>
-            <span className={styles.actions}>
-              <Link href={`/users/${user.id}`} className={styles.edit}>
+            <span data-testid={testIdBuilders.usersRowId(user.id)}>{user.id}</span>
+            <span data-testid={testIdBuilders.usersRowName(user.id)}>
+              {user.full_name}
+            </span>
+            <span data-testid={testIdBuilders.usersRowEmail(user.id)}>
+              {user.email}
+            </span>
+            <span
+              className={styles.actions}
+              data-testid={testIdBuilders.usersRowActions(user.id)}
+            >
+              <Link
+                href={`/users/${user.id}`}
+                className={styles.edit}
+                data-testid={testIdBuilders.usersEditLink(user.id)}
+              >
                 Edit
               </Link>
               <button
                 className={styles.delete}
                 type="button"
+                data-testid={testIdBuilders.usersDeleteButton(user.id)}
                 onClick={() => deleteUser(user.id)}
               >
                 Delete
@@ -118,6 +135,7 @@ export default function UsersPage() {
         message={toast.message || null}
         tone={toast.tone === "error" ? "error" : "success"}
         onClear={() => setToast({ message: "" })}
+        data-testid={testIds.users.toast}
       />
     </div>
   );

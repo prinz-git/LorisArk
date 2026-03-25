@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import Toast from "@/components/Toast";
 import { apiFetch } from "@/lib/api";
+import { testIds } from "@/lib/testids";
 import styles from "./page.module.css";
 
 export default function RegisterPage() {
@@ -35,16 +36,21 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className={styles.wrap}>
-      <div className={styles.card}>
-        <h1>Create Account</h1>
+    <div className={styles.wrap} data-testid={testIds.register.page}>
+      <div className={styles.card} data-testid={testIds.register.card}>
+        <h1 data-testid={testIds.register.title}>Create Account</h1>
         <p className={styles.subtitle}>Start managing users in minutes.</p>
-        <form className={styles.form} onSubmit={submit}>
+        <form
+          className={styles.form}
+          data-testid={testIds.register.form}
+          onSubmit={submit}
+        >
           <label className={styles.label}>
             Full Name
             <input
               type="text"
               placeholder="Alex Morgan"
+              data-testid={testIds.register.fullnameInput}
               value={fullName}
               onChange={(event) => setFullName(event.target.value)}
               required
@@ -55,6 +61,7 @@ export default function RegisterPage() {
             <input
               type="email"
               placeholder="you@example.com"
+              data-testid={testIds.register.emailInput}
               value={email}
               onChange={(event) => setEmail(event.target.value)}
               required
@@ -65,16 +72,25 @@ export default function RegisterPage() {
             <input
               type="password"
               placeholder="Create a password"
+              data-testid={testIds.register.passwordInput}
               value={password}
               onChange={(event) => setPassword(event.target.value)}
               required
             />
           </label>
-          <button className={styles.primary} type="submit">
+          <button
+            className={styles.primary}
+            type="submit"
+            data-testid={testIds.register.submitButton}
+          >
             Register
           </button>
         </form>
-        <Link href="/login" className={styles.textButton}>
+        <Link
+          href="/login"
+          className={styles.textButton}
+          data-testid={testIds.register.backLink}
+        >
           Back to Login
         </Link>
       </div>
@@ -82,6 +98,7 @@ export default function RegisterPage() {
         message={toast.message || null}
         tone={toast.tone === "error" ? "error" : "success"}
         onClear={() => setToast({ message: "" })}
+        data-testid={testIds.register.toast}
       />
     </div>
   );

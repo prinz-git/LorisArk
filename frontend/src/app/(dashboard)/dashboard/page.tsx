@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import Toast from "@/components/Toast";
 import { apiFetch } from "@/lib/api";
 import { getToken } from "@/lib/auth";
+import { testIds } from "@/lib/testids";
 import styles from "./page.module.css";
 
 type Profile = {
@@ -51,32 +52,48 @@ export default function DashboardPage() {
   }, [router]);
 
   return (
-    <div className={styles.page}>
-      <header className={styles.header}>
+    <div className={styles.page} data-testid={testIds.dashboard.page}>
+      <header className={styles.header} data-testid={testIds.dashboard.header}>
         <div>
-          <p className={styles.eyebrow}>Dashboard</p>
-          <h1>Hello, {profile?.full_name || ""}</h1>
+          <p className={styles.eyebrow} data-testid={testIds.dashboard.eyebrow}>
+            Dashboard
+          </p>
+          <h1 data-testid={testIds.dashboard.greeting}>
+            Hello, {profile?.full_name || ""}
+          </h1>
         </div>
-        <span className={styles.status}>Active session</span>
+        <span className={styles.status} data-testid={testIds.dashboard.status}>
+          Active session
+        </span>
       </header>
 
-      <section className={styles.cards}>
-        <div className={styles.card}>
+      <section className={styles.cards} data-testid={testIds.dashboard.cards}>
+        <div className={styles.card} data-testid={testIds.dashboard.cardUsers}>
           <h3>Total Users</h3>
-          <p className={styles.metric}>{users.length}</p>
+          <p className={styles.metric} data-testid={testIds.dashboard.usersCount}>
+            {users.length}
+          </p>
           <p className={styles.muted}>Tracked in real time</p>
         </div>
-        <div className={styles.card}>
+        <div className={styles.card} data-testid={testIds.dashboard.cardActivity}>
           <h3>Recent Activity</h3>
           <p className={styles.muted}>Live data pulled from the API.</p>
-          <Link href="/users" className={styles.linkButton}>
+          <Link
+            href="/users"
+            className={styles.linkButton}
+            data-testid={testIds.dashboard.viewUsersLink}
+          >
             View Users
           </Link>
         </div>
-        <div className={styles.card}>
+        <div className={styles.card} data-testid={testIds.dashboard.cardProfile}>
           <h3>Profile Health</h3>
           <p className={styles.muted}>Keep your details up to date.</p>
-          <Link href="/profile" className={styles.linkButton}>
+          <Link
+            href="/profile"
+            className={styles.linkButton}
+            data-testid={testIds.dashboard.updateProfileLink}
+          >
             Update Profile
           </Link>
         </div>
@@ -85,6 +102,7 @@ export default function DashboardPage() {
         message={toast.message || null}
         tone={toast.tone === "error" ? "error" : "success"}
         onClear={() => setToast({ message: "" })}
+        data-testid={testIds.dashboard.toast}
       />
     </div>
   );
