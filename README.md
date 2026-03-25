@@ -44,6 +44,12 @@ cd qa
 npx playwright install
 npx playwright test
 
+## Linting + Pre-commit
+
+pip install -r requirements.txt -r requirements-dev.txt
+pre-commit install
+pre-commit run --all-files
+
 ## Configuration
 
 Environment variables:
