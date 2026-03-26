@@ -19,12 +19,12 @@ export default function Sidebar() {
     <aside className={styles.sidebar}>
       <div className={styles.brand}>
         <Image
-          src="/LorisArklogo.png?v=20260313"
+          src="/LorisArklogoCircle.svg"
           alt="LorisArk logo"
-          width={40}
-          height={40}
+          width={48}
+          height={48}
           priority
-          unoptimized
+          className={styles.logo}
         />
         <span>LorisArk</span>
       </div>
