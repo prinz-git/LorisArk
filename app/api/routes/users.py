@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user_email, get_db_session
+from app.core.roles import RoleEnum
 from app.repositories.user_repo import UserRepository
 from app.services.user_service import UserService
 
@@ -22,11 +23,12 @@ def get_profile(
 def update_profile(
     full_name: str,
     password: str | None = None,
+    role: RoleEnum | None = None,
     email: str = Depends(get_current_user_email),
     db: Session = Depends(get_db_session),
 ):
     service = UserService(UserRepository(db))
-    service.update_profile(email, full_name, password)
+    service.update_profile(email, full_name, password, role.value if role else None)
     return {"message": "Profile updated successfully"}
 
 
@@ -53,11 +55,12 @@ def list_users(
 def edit_user(
     user_id: int,
     full_name: str,
+    role: RoleEnum | None = None,
     _: str = Depends(get_current_user_email),
     db: Session = Depends(get_db_session),
 ):
     service = UserService(UserRepository(db))
-    service.edit_user(user_id, full_name)
+    service.edit_user(user_id, full_name, role.value if role else None)
     return {"message": "User updated successfully"}
 
 

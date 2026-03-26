@@ -8,6 +8,7 @@ from fastapi.staticfiles import StaticFiles
 from app.api.router import api_router
 from app.core.config import settings
 from app.core.database import Base, engine
+from app.core.migrations import ensure_user_role_column
 
 
 def create_app() -> FastAPI:
@@ -37,6 +38,7 @@ def create_app() -> FastAPI:
     @app.on_event("startup")
     def _create_tables() -> None:
         Base.metadata.create_all(bind=engine)
+        ensure_user_role_column(engine)
 
     return app
 

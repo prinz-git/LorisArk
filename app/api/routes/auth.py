@@ -13,7 +13,7 @@ router = APIRouter()
 @router.post("/register")
 def register(user: UserRegister, db: Session = Depends(get_db_session)):
     service = AuthService(UserRepository(db))
-    service.register(user.email, user.full_name, user.password)
+    service.register(user.email, user.full_name, user.password, user.role.value)
     return {"message": "User registered successfully"}
 
 
