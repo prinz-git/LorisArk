@@ -6,12 +6,14 @@ import { useRouter } from "next/navigation";
 import Toast from "@/components/Toast";
 import { apiFetch } from "@/lib/api";
 import { getToken } from "@/lib/auth";
+import { defaultRoleOptions } from "@/lib/roles";
 import { testIds } from "@/lib/testids";
 import styles from "./page.module.css";
 
 type Profile = {
   email: string;
   full_name: string;
+  role: string;
 };
 
 type User = {
@@ -27,6 +29,11 @@ export default function DashboardPage() {
   const [toast, setToast] = useState<{ message: string; tone?: "error" }>({
     message: "",
   });
+
+  const roleOption = defaultRoleOptions.find((option) => option.id === profile?.role);
+  const roleTitle = roleOption?.title || profile?.role || "";
+  const roleLabel = roleOption?.label || "Role";
+  const roleIcon = roleTitle ? roleTitle.slice(0, 1).toUpperCase() : "";
 
   useEffect(() => {
     const token = getToken();
@@ -58,9 +65,27 @@ export default function DashboardPage() {
           <p className={styles.eyebrow} data-testid={testIds.dashboard.eyebrow}>
             Dashboard
           </p>
-          <h1 data-testid={testIds.dashboard.greeting}>
-            Hello, {profile?.full_name || ""}
-          </h1>
+          <div className={styles.greetingRow}>
+            <h1 data-testid={testIds.dashboard.greeting}>
+              Hello, {profile?.full_name || ""}
+            </h1>
+            {profile?.role && (
+              <span
+                className={styles.roleBadge}
+                data-testid={testIds.dashboard.roleBadge}
+              >
+                <span className={styles.roleIcon} aria-hidden="true">
+                  {roleIcon}
+                </span>
+                <span className={styles.roleText}>
+                  <span className={styles.roleTitle}>
+                    {roleTitle.charAt(0).toUpperCase() + roleTitle.slice(1)}
+                  </span>
+                  <span className={styles.roleTag}>{roleLabel}</span>
+                </span>
+              </span>
+            )}
+          </div>
         </div>
         <span className={styles.status} data-testid={testIds.dashboard.status}>
           Active session

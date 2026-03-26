@@ -3,32 +3,12 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Toast from "@/components/Toast";
 import { apiFetch } from "@/lib/api";
+import { defaultRoleOptions, RoleOption } from "@/lib/roles";
 import { testIds } from "@/lib/testids";
 import styles from "./page.module.css";
-
-const roleOptions = [
-  {
-    id: "nomad",
-    title: "Nomad",
-    label: "Guest",
-    copy: "Stay in village homes and earn trust through respectful travel.",
-  },
-  {
-    id: "host",
-    title: "Host",
-    label: "Accommodation",
-    copy: "Open your home and manage bookings with confidence.",
-  },
-  {
-    id: "artisan",
-    title: "Artisan",
-    label: "Service",
-    copy: "Offer local services and build a reputation across the Ark.",
-  },
-];
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -36,6 +16,9 @@ export default function RegisterPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState("nomad");
+  const [roleOptions, setRoleOptions] = useState<RoleOption[]>(
+    defaultRoleOptions
+  );
   const [kycFileName, setKycFileName] = useState("");
   const [step, setStep] = useState(1);
   const [toast, setToast] = useState<{ message: string; tone?: "error" }>({
@@ -44,7 +27,29 @@ export default function RegisterPage() {
 
   const roleLabel = useMemo(() => {
     return roleOptions.find((option) => option.id === role)?.title ?? "Nomad";
-  }, [role]);
+  }, [role, roleOptions]);
+
+  useEffect(() => {
+    let mounted = true;
+    const loadRoles = async () => {
+      try {
+        const data = await apiFetch<RoleOption[]>("/roles");
+        if (!mounted || !Array.isArray(data) || data.length === 0) {
+          return;
+        }
+        setRoleOptions(data);
+        if (!data.find((option) => option.id === role)) {
+          setRole(data[0].id);
+        }
+      } catch {
+        // Fall back to defaults if roles cannot be loaded.
+      }
+    };
+    loadRoles();
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -55,6 +60,7 @@ export default function RegisterPage() {
           email,
           full_name: fullName,
           password,
+          role,
         }),
       });
       setToast({ message: "Account created. Please log in." });

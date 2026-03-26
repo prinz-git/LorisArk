@@ -20,6 +20,55 @@
   font-weight: 700;
 }
 
+.greetingRow {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+}
+
+.roleBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.45rem 0.9rem;
+  border-radius: 999px;
+  border: 1px solid rgba(40, 30, 93, 0.12);
+  background: linear-gradient(135deg, rgba(125, 249, 255, 0.18), rgba(255, 255, 255, 0.92));
+  font-weight: 600;
+  color: var(--color-indigo);
+}
+
+.roleIcon {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: rgba(125, 249, 255, 0.45);
+  border: 1px solid rgba(40, 30, 93, 0.16);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  color: var(--color-indigo);
+}
+
+.roleText {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.1;
+}
+
+.roleTitle {
+  font-weight: 700;
+}
+
+.roleTag {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12rem;
+  color: var(--color-moss);
+}
+
 .status {
   padding: 0.5rem 1.2rem;
   border-radius: 999px;
