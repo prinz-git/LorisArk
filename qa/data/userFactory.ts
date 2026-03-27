@@ -2,6 +2,7 @@ export type User = {
   email: string;
   password: string;
   full_name: string;
+  role: "nomad" | "host" | "artisan";
 };
 
 export function createUser(overrides: Partial<User> = {}): User {
@@ -11,6 +12,7 @@ export function createUser(overrides: Partial<User> = {}): User {
     email: `user${unique}@test.com`,
     password: "123456",
     full_name: "Playwright Test User",
+    role: "nomad",
     ...overrides,
   };
 }
