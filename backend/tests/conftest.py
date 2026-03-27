@@ -53,7 +53,8 @@ def user_data():
     return {
         "email": f"{uuid.uuid4()}@test.com",
         "password": "123456",
-        "full_name": "Test User"
+        "full_name": "Test User",
+        "role": "host",
     }
 
 
