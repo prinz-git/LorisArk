@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import Toast from "@/components/Toast";
 import { apiFetch } from "@/lib/api";
@@ -112,8 +113,25 @@ export default function ProfilePage() {
   return (
     <div className={styles.page} data-testid={testIds.profile.page}>
       <div className={styles.card} data-testid={testIds.profile.card}>
-        <h1 data-testid={testIds.profile.title}>Edit Profile</h1>
-        <p className={styles.subtitle}>Keep your profile details current.</p>
+        <div className={styles.hero}>
+          <div className={styles.avatarWrap}>
+            <Image
+              src="/LorisArklogo.svg"
+              alt="Default profile avatar"
+              width={120}
+              height={120}
+              className={styles.avatar}
+              priority
+            />
+            <span className={styles.avatarRing} aria-hidden="true" />
+          </div>
+          <div>
+            <p className={styles.kicker}>Profile</p>
+            <h1 data-testid={testIds.profile.title}>
+              {profile?.full_name || "Your Profile"}
+            </h1>
+          </div>
+        </div>
         <form
           className={styles.form}
           data-testid={testIds.profile.form}

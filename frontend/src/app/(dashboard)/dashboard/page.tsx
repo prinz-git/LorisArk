@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -94,14 +95,32 @@ export default function DashboardPage() {
 
       <section className={styles.cards} data-testid={testIds.dashboard.cards}>
         <div className={styles.card} data-testid={testIds.dashboard.cardUsers}>
-          <h3>Total Users</h3>
+          <div className={styles.cardHeader}>
+            <h3>Total Users</h3>
+            <Image
+              src="/LorisArklogoCircle.svg"
+              alt="LorisArk mark"
+              width={36}
+              height={36}
+              className={styles.cardLogo}
+            />
+          </div>
           <p className={styles.metric} data-testid={testIds.dashboard.usersCount}>
             {users.length}
           </p>
           <p className={styles.muted}>Tracked in real time</p>
         </div>
         <div className={styles.card} data-testid={testIds.dashboard.cardActivity}>
-          <h3>Recent Activity</h3>
+          <div className={styles.cardHeader}>
+            <h3>Recent Activity</h3>
+            <Image
+              src="/LorisArklogoLetters.svg"
+              alt="LorisArk letters"
+              width={36}
+              height={36}
+              className={styles.cardLogo}
+            />
+          </div>
           <p className={styles.muted}>Live data pulled from the API.</p>
           <Link
             href="/users"
@@ -112,7 +131,16 @@ export default function DashboardPage() {
           </Link>
         </div>
         <div className={styles.card} data-testid={testIds.dashboard.cardProfile}>
-          <h3>Profile Health</h3>
+          <div className={styles.cardHeader}>
+            <h3>Profile Health</h3>
+            <Image
+              src="/LorisArklogo.svg"
+              alt="LorisArk logo"
+              width={36}
+              height={36}
+              className={styles.cardLogo}
+            />
+          </div>
           <p className={styles.muted}>Keep your details up to date.</p>
           <Link
             href="/profile"

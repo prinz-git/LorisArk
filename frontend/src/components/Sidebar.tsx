@@ -12,21 +12,33 @@ const navItems = [
   { label: "Logout", href: "/logout" },
 ];
 
-export default function Sidebar() {
+type SidebarProps = {
+  isOpen?: boolean;
+};
+
+export default function Sidebar({ isOpen = true }: SidebarProps) {
   const pathname = usePathname();
 
   return (
-    <aside className={styles.sidebar}>
+    <aside
+      className={`${styles.sidebar} ${isOpen ? styles.open : styles.closed}`}
+      aria-hidden={!isOpen}
+    >
       <div className={styles.brand}>
-        <Image
-          src="/LorisArklogoCircle.svg"
-          alt="LorisArk logo"
-          width={48}
-          height={48}
-          priority
-          className={styles.logo}
-        />
-        <span>LorisArk</span>
+        <div className={styles.logoWrap}>
+          <Image
+            src="/LorisArklogoCircle.svg"
+            alt="LorisArk logo"
+            width={64}
+            height={64}
+            priority
+            className={styles.logo}
+          />
+        </div>
+        <div className={styles.brandText}>
+          <span>LorisArk</span>
+          <span className={styles.brandTag}>Village Ops</span>
+        </div>
       </div>
       <nav className={styles.nav}>
         {navItems.map((item) => {
