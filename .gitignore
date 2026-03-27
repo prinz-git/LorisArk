@@ -17,7 +17,7 @@ htmlcov/
 *.db
 *.sqlite
 *.sqlite3
-data/
+/data/
 
 # Node / Playwright
 node_modules/
