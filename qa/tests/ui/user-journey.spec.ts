@@ -46,7 +46,7 @@ test.describe("Registration", () => {
     try {
       await register.goto();
       await register.assertReady();
-      await register.register(user.full_name, user.email, user.password);
+      await register.register(user.full_name, user.email, user.password, "host");
 
       await expectToast(
         page,
@@ -69,7 +69,8 @@ test.describe("Registration", () => {
       await register.register(
         seeded.user.full_name,
         seeded.user.email,
-        seeded.user.password
+        seeded.user.password,
+        "nomad"
       );
 
       await expectToast(page, "User already exists", testIds.register.toast);
@@ -103,6 +104,13 @@ test.describe("Registration", () => {
       (el) => (el as HTMLInputElement).validity.valid
     );
     expect(isValid).toBe(false);
+
+    await register.continueToRole();
+    await expectToast(
+      page,
+      "Please complete all fields to continue.",
+      testIds.register.toast
+    );
   });
 });
 
@@ -211,7 +219,8 @@ test.describe("User E2E journey", () => {
       await register.register(
         secondaryUser.full_name,
         secondaryUser.email,
-        secondaryUser.password
+        secondaryUser.password,
+        "artisan"
       );
 
       await expectToast(
@@ -228,7 +237,8 @@ test.describe("User E2E journey", () => {
       await register.register(
         primaryUser.full_name,
         primaryUser.email,
-        primaryUser.password
+        primaryUser.password,
+        "host"
       );
 
       await expectToast(
