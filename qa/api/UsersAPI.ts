@@ -16,14 +16,15 @@ export class UsersAPI {
 
   }
 
-  async editProfile(fullName: string) {
+  async editProfile(fullName: string, role?: string) {
+    const params: Record<string, string> = {
+      full_name: fullName,
+    };
+    if (role) {
+      params.role = role;
+    }
 
-    return await this.request.put("/profile", {
-      params: {
-        full_name: fullName
-      }
-    });
-
+    return await this.request.put("/profile", { params });
   }
 
   async deleteProfile() {
@@ -32,14 +33,15 @@ export class UsersAPI {
 
   }
 
-  async editUser(id: number, fullName: string) {
+  async editUser(id: number, fullName: string, role?: string) {
+    const params: Record<string, string> = {
+      full_name: fullName,
+    };
+    if (role) {
+      params.role = role;
+    }
 
-    return await this.request.put(`/users/${id}`, {
-      params: {
-        full_name: fullName
-      }
-    });
-
+    return await this.request.put(`/users/${id}`, { params });
   }
 
   async deleteUser(id: number) {

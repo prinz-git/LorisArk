@@ -9,7 +9,7 @@ test("User can register and login", async () => {
   const auth = new AuthAPI(request);
 
   try {
-    const user = createUser();
+    const user = createUser({ role: "host" });
 
     const register = await auth.register(user);
     expectStatus(register, 200);

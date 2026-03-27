@@ -1,16 +1,19 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import Toast from "@/components/Toast";
 import { apiFetch } from "@/lib/api";
 import { clearToken, getToken } from "@/lib/auth";
+import { defaultRoleOptions, RoleOption } from "@/lib/roles";
 import { testIds } from "@/lib/testids";
 import styles from "./page.module.css";
 
 type Profile = {
   email: string;
   full_name: string;
+  role: string;
 };
 
 export default function ProfilePage() {
@@ -18,6 +21,10 @@ export default function ProfilePage() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [fullName, setFullName] = useState("");
   const [password, setPassword] = useState("");
+  const [role, setRole] = useState("nomad");
+  const [roleOptions, setRoleOptions] = useState<RoleOption[]>(
+    defaultRoleOptions
+  );
   const [toast, setToast] = useState<{ message: string; tone?: "error" }>({
     message: "",
   });
@@ -31,9 +38,23 @@ export default function ProfilePage() {
 
     const load = async () => {
       try {
-        const data = await apiFetch<Profile>("/profile", { token });
-        setProfile(data);
-        setFullName(data.full_name);
+        const profileData = await apiFetch<Profile>("/profile", { token });
+        setProfile(profileData);
+        setFullName(profileData.full_name);
+        setRole(profileData.role || "nomad");
+
+        try {
+          const rolesData = await apiFetch<RoleOption[]>("/roles");
+          if (rolesData && rolesData.length > 0) {
+            setRoleOptions(rolesData);
+            const nextRole =
+              rolesData.find((option) => option.id === profileData.role)?.id ??
+              rolesData[0].id;
+            setRole(nextRole);
+          }
+        } catch {
+          // Keep defaults when roles cannot be loaded.
+        }
       } catch (error) {
         setToast({ message: (error as Error).message, tone: "error" });
       }
@@ -53,6 +74,9 @@ export default function ProfilePage() {
     params.set("full_name", fullName);
     if (password) {
       params.set("password", password);
+    }
+    if (role) {
+      params.set("role", role);
     }
 
     try {
@@ -89,8 +113,25 @@ export default function ProfilePage() {
   return (
     <div className={styles.page} data-testid={testIds.profile.page}>
       <div className={styles.card} data-testid={testIds.profile.card}>
-        <h1 data-testid={testIds.profile.title}>Edit Profile</h1>
-        <p className={styles.subtitle}>Keep your profile details current.</p>
+        <div className={styles.hero}>
+          <div className={styles.avatarWrap}>
+            <Image
+              src="/LorisArklogo.svg"
+              alt="Default profile avatar"
+              width={120}
+              height={120}
+              className={styles.avatar}
+              priority
+            />
+            <span className={styles.avatarRing} aria-hidden="true" />
+          </div>
+          <div>
+            <p className={styles.kicker}>Profile</p>
+            <h1 data-testid={testIds.profile.title}>
+              {profile?.full_name || "Your Profile"}
+            </h1>
+          </div>
+        </div>
         <form
           className={styles.form}
           data-testid={testIds.profile.form}
@@ -123,6 +164,20 @@ export default function ProfilePage() {
               value={password}
               onChange={(event) => setPassword(event.target.value)}
             />
+          </label>
+          <label className={styles.label}>
+            Role
+            <select
+              value={role}
+              onChange={(event) => setRole(event.target.value)}
+              data-testid={testIds.profile.roleSelect}
+            >
+              {roleOptions.map((option) => (
+                <option key={option.id} value={option.id}>
+                  {option.title} • {option.label}
+                </option>
+              ))}
+            </select>
           </label>
           <div className={styles.actions} data-testid={testIds.profile.actions}>
             <button

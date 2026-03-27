@@ -16,8 +16,8 @@ class UserRepository:
     def list_all(self) -> list[User]:
         return self.db.query(User).all()
 
-    def create(self, email: str, full_name: str, password: str) -> User:
-        user = User(email=email, full_name=full_name, password=password)
+    def create(self, email: str, full_name: str, password: str, role: str) -> User:
+        user = User(email=email, full_name=full_name, password=password, role=role)
         self.db.add(user)
         self.db.commit()
         self.db.refresh(user)

@@ -8,13 +8,14 @@ class AuthService:
     def __init__(self, repo: UserRepository):
         self.repo = repo
 
-    def register(self, email: str, full_name: str, password: str) -> None:
+    def register(self, email: str, full_name: str, password: str, role: str) -> None:
         if self.repo.get_by_email(email):
             raise HTTPException(status_code=400, detail="User already exists")
         self.repo.create(
             email=email,
             full_name=full_name,
             password=hash_password(password),
+            role=role,
         )
 
     def login(self, email: str, password: str) -> str:

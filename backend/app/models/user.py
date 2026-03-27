@@ -10,3 +10,4 @@ class User(Base):
     email = Column(String, unique=True, index=True)
     full_name = Column(String)
     password = Column(String)
+    role = Column(String, default="nomad", nullable=False)

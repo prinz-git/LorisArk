@@ -1,6 +1,7 @@
 services:
   api:
     build: .
+    working_dir: /app/backend
     ports:
       - "8000:8000"
     environment:
@@ -30,6 +31,7 @@ services:
   api-prod:
     build: .
     profiles: ["prod"]
+    working_dir: /app/backend
     ports:
       - "8000:8000"
     environment:
