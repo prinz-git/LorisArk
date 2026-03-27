@@ -2,11 +2,9 @@ import { request, APIRequestContext } from "@playwright/test";
 import { ENV } from "./env";
 
 export class APIClient {
-
   static async create(token?: string): Promise<APIRequestContext> {
-
-    const headers: any = {
-      "Content-Type": "application/json"
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
     };
 
     if (token) {
@@ -14,9 +12,8 @@ export class APIClient {
     }
 
     return await request.newContext({
-      baseURL: ENV.BASE_URL,
-      extraHTTPHeaders: headers
+      baseURL: ENV.API_BASE_URL,
+      extraHTTPHeaders: headers,
     });
   }
-
 }

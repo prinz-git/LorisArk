@@ -18,7 +18,7 @@
 ## Run Application
 
 export SECRET_KEY="change-me"
-uvicorn app.main:app --reload
+PYTHONPATH=backend uvicorn app.main:app --reload
 
 ## Run with Docker
 
