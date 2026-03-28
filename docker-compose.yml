@@ -1,13 +1,14 @@
 services:
   api:
     build: .
+    image: lorisark-api
     working_dir: /app/backend
     ports:
       - "8000:8000"
     environment:
-      APP_ENV: "local"
-      SECRET_KEY: "change-me"
-      DATABASE_URL: "sqlite:////app/data/users.db"
+      APP_ENV: ${APP_ENV:-local}
+      SECRET_KEY: ${SECRET_KEY:-change-me}
+      DATABASE_URL: ${DATABASE_URL:-sqlite:////app/data/users.db}
     volumes:
       - ./data:/app/data
     command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
@@ -21,10 +22,11 @@ services:
   frontend:
     build:
       context: ./frontend
+    image: lorisark-frontend
     ports:
       - "3000:3000"
     environment:
-      NEXT_PUBLIC_API_BASE_URL: "http://localhost:8000"
+      NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://localhost:8000}
     depends_on:
       - api
 
@@ -35,9 +37,9 @@ services:
     ports:
       - "8000:8000"
     environment:
-      APP_ENV: "prod"
-      SECRET_KEY: "change-me"
-      DATABASE_URL: "sqlite:////app/data/users.db"
+      APP_ENV: ${APP_ENV:-prod}
+      SECRET_KEY: ${SECRET_KEY:-change-me}
+      DATABASE_URL: ${DATABASE_URL:-sqlite:////app/data/users.db}
       WEB_CONCURRENCY: "2"
     volumes:
       - ./data:/app/data
