@@ -149,6 +149,8 @@ jobs:
           done
           echo "API did not start";
           docker compose ps;
+          docker compose logs api --tail=200;
+          docker compose ps;
           exit 1
 
       - name: Run API tests
@@ -223,6 +225,7 @@ jobs:
           done
           echo "API did not start";
           docker compose ps;
+          docker compose logs api --tail=200;
           exit 1
 
       - name: Wait for frontend
