@@ -136,7 +136,8 @@ jobs:
         run: docker load -i /tmp/lorisark-api.tar
 
       - name: Start services with Docker Compose
-        run: docker compose up -d --no-build api
+        run: |
+          docker compose -f docker-compose.yml -f docker-compose.ci.yml up -d --no-build api
 
       - name: Wait for API
         run: |
@@ -168,7 +169,7 @@ jobs:
 
       - name: Stop services
         if: always()
-        run: docker compose down -v
+        run: docker compose -f docker-compose.yml -f docker-compose.ci.yml down -v
 
   qa-ui:
     name: QA UI Tests (Playwright)
@@ -212,7 +213,8 @@ jobs:
           docker load -i /tmp/lorisark-frontend.tar
 
       - name: Start services with Docker Compose
-        run: docker compose up -d --no-build
+        run: |
+          docker compose -f docker-compose.yml -f docker-compose.ci.yml up -d --no-build
 
       - name: Wait for API
         run: |
@@ -257,4 +259,4 @@ jobs:
 
       - name: Stop services
         if: always()
-        run: docker compose down -v
+        run: docker compose -f docker-compose.yml -f docker-compose.ci.yml down -v
