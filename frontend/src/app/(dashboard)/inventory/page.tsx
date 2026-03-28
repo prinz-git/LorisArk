@@ -48,6 +48,7 @@ export default function InventoryPage() {
     message: "",
   });
   const [searchTerm, setSearchTerm] = useState("");
+  const [dateRange, setDateRange] = useState({ start: "", end: "" });
   const [roostPage, setRoostPage] = useState(1);
   const [rootPage, setRootPage] = useState(1);
   const itemsPerPage = 4;
@@ -292,19 +293,22 @@ export default function InventoryPage() {
         {isNomad && (
           <section className={styles.card}>
             <div className={styles.cardHeader}>
-              <h2>Find By Place</h2>
+              <h2>Find Your Next Roost</h2>
               <p className={styles.cardHint}>
-                Search villages, neighborhoods, or market squares.
+                Explore the local Roots and align your work-stay horizon.
               </p>
             </div>
             <div className={styles.searchRow}>
-              <input
-                type="text"
-                className={styles.searchInput}
-                value={searchTerm}
-                onChange={(event) => setSearchTerm(event.target.value)}
-                placeholder="Search place names"
-              />
+              <label className={styles.inlineLabel}>
+                Location Search
+                <input
+                  type="text"
+                  className={styles.searchInput}
+                  value={searchTerm}
+                  onChange={(event) => setSearchTerm(event.target.value)}
+                  placeholder="Where are you roosting next?"
+                />
+              </label>
             </div>
             <div className={styles.mapPlaceholder}>
               <div className={styles.mapCanvas}>
@@ -317,6 +321,31 @@ export default function InventoryPage() {
                 Enable Google Maps (Coming Soon)
               </button>
             </div>
+            <div className={styles.dateRow}>
+              <label className={styles.inlineLabel}>
+                Start Date
+                <input
+                  type="date"
+                  value={dateRange.start}
+                  onChange={(event) =>
+                    setDateRange((prev) => ({ ...prev, start: event.target.value }))
+                  }
+                />
+              </label>
+              <label className={styles.inlineLabel}>
+                End Date
+                <input
+                  type="date"
+                  value={dateRange.end}
+                  onChange={(event) =>
+                    setDateRange((prev) => ({ ...prev, end: event.target.value }))
+                  }
+                />
+              </label>
+            </div>
+            <button type="button" className={styles.searchButton}>
+              Find & Explore
+            </button>
           </section>
         )}
 
@@ -594,13 +623,16 @@ export default function InventoryPage() {
       </div>
 
       {isNomad && (
-        <div className={styles.grid}>
-          <section className={styles.card}>
-            <div className={styles.cardHeader}>
-              <h2>Roost Listings</h2>
-              <p className={styles.cardHint}>Browse host spaces near you.</p>
-            </div>
+        <section className={styles.card}>
+          <div className={styles.cardHeader}>
+            <h2>Roosts & Roots</h2>
+            <p className={styles.cardHint}>
+              Browse host spaces and artisan services in one sweep.
+            </p>
+          </div>
+          <div className={styles.split}>
             <div className={styles.list}>
+              <h3>Roost Listings</h3>
               {filteredRoosts.length === 0 ? (
                 <p className={styles.empty}>
                   The trail is quiet — no roosts answered your call.
@@ -622,38 +654,32 @@ export default function InventoryPage() {
                     </div>
                   ))
               )}
-            </div>
-            {filteredRoosts.length > itemsPerPage && (
-              <div className={styles.pagination}>
-                <button
-                  type="button"
-                  onClick={() => setRoostPage((prev) => Math.max(1, prev - 1))}
-                  disabled={roostPage === 1}
-                >
-                  Prev
-                </button>
-                <span>
-                  Page {roostPage} of {roostPageCount}
-                </span>
-                <button
-                  type="button"
-                  onClick={() =>
-                    setRoostPage((prev) => Math.min(roostPageCount, prev + 1))
-                  }
-                  disabled={roostPage === roostPageCount}
-                >
-                  Next
-                </button>
-              </div>
-            )}
-          </section>
-
-          <section className={styles.card}>
-            <div className={styles.cardHeader}>
-              <h2>Root Services</h2>
-              <p className={styles.cardHint}>Meet artisans sharing their craft.</p>
+              {filteredRoosts.length > itemsPerPage && (
+                <div className={styles.pagination}>
+                  <button
+                    type="button"
+                    onClick={() => setRoostPage((prev) => Math.max(1, prev - 1))}
+                    disabled={roostPage === 1}
+                  >
+                    Prev
+                  </button>
+                  <span>
+                    Page {roostPage} of {roostPageCount}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setRoostPage((prev) => Math.min(roostPageCount, prev + 1))
+                    }
+                    disabled={roostPage === roostPageCount}
+                  >
+                    Next
+                  </button>
+                </div>
+              )}
             </div>
             <div className={styles.list}>
+              <h3>Root Services</h3>
               {filteredRoots.length === 0 ? (
                 <p className={styles.empty}>
                   No roots surfaced — the village is still gathering.
@@ -675,32 +701,32 @@ export default function InventoryPage() {
                     </div>
                   ))
               )}
+              {filteredRoots.length > itemsPerPage && (
+                <div className={styles.pagination}>
+                  <button
+                    type="button"
+                    onClick={() => setRootPage((prev) => Math.max(1, prev - 1))}
+                    disabled={rootPage === 1}
+                  >
+                    Prev
+                  </button>
+                  <span>
+                    Page {rootPage} of {rootPageCount}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setRootPage((prev) => Math.min(rootPageCount, prev + 1))
+                    }
+                    disabled={rootPage === rootPageCount}
+                  >
+                    Next
+                  </button>
+                </div>
+              )}
             </div>
-            {filteredRoots.length > itemsPerPage && (
-              <div className={styles.pagination}>
-                <button
-                  type="button"
-                  onClick={() => setRootPage((prev) => Math.max(1, prev - 1))}
-                  disabled={rootPage === 1}
-                >
-                  Prev
-                </button>
-                <span>
-                  Page {rootPage} of {rootPageCount}
-                </span>
-                <button
-                  type="button"
-                  onClick={() =>
-                    setRootPage((prev) => Math.min(rootPageCount, prev + 1))
-                  }
-                  disabled={rootPage === rootPageCount}
-                >
-                  Next
-                </button>
-              </div>
-            )}
-          </section>
-        </div>
+          </div>
+        </section>
       )}
 
       <Toast
