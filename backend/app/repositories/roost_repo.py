@@ -37,7 +37,7 @@ class RoostRepository:
                     RoostListing.place_name.ilike(like),
                 )
             )
-        total = query.with_entities(func.count()).scalar() or 0
+        total = query.with_entities(func.count(RoostListing.id)).scalar() or 0
         items = (
             query.order_by(RoostListing.id.desc())
             .offset((page - 1) * limit)

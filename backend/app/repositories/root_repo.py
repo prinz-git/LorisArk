@@ -37,7 +37,7 @@ class RootRepository:
                     RootListing.place_name.ilike(like),
                 )
             )
-        total = query.with_entities(func.count()).scalar() or 0
+        total = query.with_entities(func.count(RootListing.id)).scalar() or 0
         items = (
             query.order_by(RootListing.id.desc())
             .offset((page - 1) * limit)
