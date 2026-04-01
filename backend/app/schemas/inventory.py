@@ -39,6 +39,13 @@ class RoostResponse(BaseModel):
         orm_mode = True
 
 
+class RoostPage(BaseModel):
+    items: list[RoostResponse]
+    total: int
+    page: int
+    limit: int
+
+
 class RootCreate(BaseModel):
     service_category: str
     service_description: str
@@ -69,3 +76,10 @@ class RootResponse(BaseModel):
 
     class Config:
         orm_mode = True
+
+
+class RootPage(BaseModel):
+    items: list[RootResponse]
+    total: int
+    page: int
+    limit: int

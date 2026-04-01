@@ -1,9 +1,11 @@
 from app.schemas.auth import UserRegister, UserLogin, TokenResponse
 from app.schemas.inventory import (
     RoostCreate,
+    RoostPage,
     RoostUpdate,
     RoostResponse,
     RootCreate,
+    RootPage,
     RootUpdate,
     RootResponse,
 )
@@ -15,9 +17,11 @@ __all__ = [
     "UserLogin",
     "TokenResponse",
     "RoostCreate",
+    "RoostPage",
     "RoostUpdate",
     "RoostResponse",
     "RootCreate",
+    "RootPage",
     "RootUpdate",
     "RootResponse",
     "RoleOption",

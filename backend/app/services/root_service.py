@@ -26,8 +26,13 @@ class RootServiceManager:
             )
         return user
 
-    def list_all(self) -> list[RootListing]:
-        return self.root_repo.list_all()
+    def list_all(self, search: str | None = None) -> list[RootListing]:
+        return self.root_repo.list_all(search)
+
+    def list_page(
+        self, page: int, limit: int, search: str | None = None
+    ) -> tuple[list[RootListing], int]:
+        return self.root_repo.list_page(page, limit, search)
 
     def list_mine(self, email: str) -> list[RootListing]:
         user = self._get_user(email)

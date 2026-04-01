@@ -26,8 +26,13 @@ class RoostService:
             )
         return user
 
-    def list_all(self) -> list[RoostListing]:
-        return self.roost_repo.list_all()
+    def list_all(self, search: str | None = None) -> list[RoostListing]:
+        return self.roost_repo.list_all(search)
+
+    def list_page(
+        self, page: int, limit: int, search: str | None = None
+    ) -> tuple[list[RoostListing], int]:
+        return self.roost_repo.list_page(page, limit, search)
 
     def list_mine(self, email: str) -> list[RoostListing]:
         user = self._get_user(email)

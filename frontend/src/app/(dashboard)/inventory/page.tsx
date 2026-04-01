@@ -44,6 +44,8 @@ export default function InventoryPage() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [roosts, setRoosts] = useState<Roost[]>([]);
   const [roots, setRoots] = useState<Root[]>([]);
+  const [roostTotal, setRoostTotal] = useState(0);
+  const [rootTotal, setRootTotal] = useState(0);
   const [toast, setToast] = useState<{ message: string; tone?: "error" }>({
     message: "",
   });
@@ -83,43 +85,8 @@ export default function InventoryPage() {
   const isArtisan = profile?.role === "artisan";
   const isNomad = profile?.role === "nomad";
 
-  const filteredRoosts = useMemo(() => {
-    if (!isNomad) return roosts;
-    if (!searchTerm.trim()) return roosts;
-    const query = searchTerm.toLowerCase();
-    return roosts.filter((roost) =>
-      [
-        roost.title,
-        roost.bedroom_type,
-        roost.place_name || "",
-      ]
-        .join(" ")
-        .toLowerCase()
-        .includes(query)
-    );
-  }, [isNomad, roosts, searchTerm]);
-
-  const filteredRoots = useMemo(() => {
-    if (!isNomad) return roots;
-    if (!searchTerm.trim()) return roots;
-    const query = searchTerm.toLowerCase();
-    return roots.filter((root) =>
-      [
-        root.service_category,
-        root.service_description,
-        root.place_name || "",
-      ]
-        .join(" ")
-        .toLowerCase()
-        .includes(query)
-    );
-  }, [isNomad, roots, searchTerm]);
-
-  const roostPageCount = Math.max(
-    1,
-    Math.ceil(filteredRoosts.length / itemsPerPage)
-  );
-  const rootPageCount = Math.max(1, Math.ceil(filteredRoots.length / itemsPerPage));
+  const roostPageCount = Math.max(1, Math.ceil(roostTotal / itemsPerPage));
+  const rootPageCount = Math.max(1, Math.ceil(rootTotal / itemsPerPage));
 
   useEffect(() => {
     setRoostPage(1);
@@ -132,12 +99,7 @@ export default function InventoryPage() {
       setProfile(profileData);
 
       if (profileData.role === "nomad") {
-        const [roostData, rootData] = await Promise.all([
-          apiFetch<Roost[]>("/roosts", { token }),
-          apiFetch<Root[]>("/roots", { token }),
-        ]);
-        setRoosts(roostData);
-        setRoots(rootData);
+        return;
       } else {
         const [roostData, rootData] = await Promise.all([
           apiFetch<Roost[]>("/roosts/mine", { token }),
@@ -159,6 +121,48 @@ export default function InventoryPage() {
     }
     loadData(token);
   }, [router]);
+
+  useEffect(() => {
+    if (!isNomad) {
+      return;
+    }
+    const token = getToken();
+    if (!token) {
+      return;
+    }
+    const fetchNomadPage = async () => {
+      try {
+        const roostParams = new URLSearchParams();
+        roostParams.set("page", String(roostPage));
+        roostParams.set("limit", String(itemsPerPage));
+        if (searchTerm.trim()) {
+          roostParams.set("search", searchTerm.trim());
+        }
+        const rootParams = new URLSearchParams();
+        rootParams.set("page", String(rootPage));
+        rootParams.set("limit", String(itemsPerPage));
+        if (searchTerm.trim()) {
+          rootParams.set("search", searchTerm.trim());
+        }
+        const [roostData, rootData] = await Promise.all([
+          apiFetch<{ items: Roost[]; total: number }>(
+            `/roosts?${roostParams}`,
+            { token }
+          ),
+          apiFetch<{ items: Root[]; total: number }>(`/roots?${rootParams}`, {
+            token,
+          }),
+        ]);
+        setRoosts(roostData.items);
+        setRoostTotal(roostData.total);
+        setRoots(rootData.items);
+        setRootTotal(rootData.total);
+      } catch (error) {
+        setToast({ message: (error as Error).message, tone: "error" });
+      }
+    };
+    fetchNomadPage();
+  }, [isNomad, itemsPerPage, roostPage, rootPage, searchTerm]);
 
   const submitRoost = async () => {
     const token = getToken();
@@ -633,28 +637,26 @@ export default function InventoryPage() {
           <div className={styles.split}>
             <div className={styles.list}>
               <h3>Roost Listings</h3>
-              {filteredRoosts.length === 0 ? (
+              {roosts.length === 0 ? (
                 <p className={styles.empty}>
                   The trail is quiet — no roosts answered your call.
                 </p>
               ) : (
-                filteredRoosts
-                  .slice((roostPage - 1) * itemsPerPage, roostPage * itemsPerPage)
-                  .map((roost) => (
-                    <div key={roost.id} className={styles.listItem}>
-                      <div>
-                        <strong>{roost.title}</strong>
-                        <span>
-                          {roost.bedroom_type} • Wi-Fi {roost.wifi_speed_mbps} Mbps
-                        </span>
-                      </div>
-                      <span className={styles.coords}>
-                        {roost.place_name || "Location pending"}
+                roosts.map((roost) => (
+                  <div key={roost.id} className={styles.listItem}>
+                    <div>
+                      <strong>{roost.title}</strong>
+                      <span>
+                        {roost.bedroom_type} • Wi-Fi {roost.wifi_speed_mbps} Mbps
                       </span>
                     </div>
-                  ))
+                    <span className={styles.coords}>
+                      {roost.place_name || "Location pending"}
+                    </span>
+                  </div>
+                ))
               )}
-              {filteredRoosts.length > itemsPerPage && (
+              {roostTotal > itemsPerPage && (
                 <div className={styles.pagination}>
                   <button
                     type="button"
@@ -680,28 +682,26 @@ export default function InventoryPage() {
             </div>
             <div className={styles.list}>
               <h3>Root Services</h3>
-              {filteredRoots.length === 0 ? (
+              {roots.length === 0 ? (
                 <p className={styles.empty}>
                   No roots surfaced — the village is still gathering.
                 </p>
               ) : (
-                filteredRoots
-                  .slice((rootPage - 1) * itemsPerPage, rootPage * itemsPerPage)
-                  .map((root) => (
-                    <div key={root.id} className={styles.listItem}>
-                      <div>
-                        <strong>{root.service_category}</strong>
-                        <span>
-                          {root.service_description} • Capacity {root.service_capacity}
-                        </span>
-                      </div>
-                      <span className={styles.coords}>
-                        {root.place_name || "Location pending"}
+                roots.map((root) => (
+                  <div key={root.id} className={styles.listItem}>
+                    <div>
+                      <strong>{root.service_category}</strong>
+                      <span>
+                        {root.service_description} • Capacity {root.service_capacity}
                       </span>
                     </div>
-                  ))
+                    <span className={styles.coords}>
+                      {root.place_name || "Location pending"}
+                    </span>
+                  </div>
+                ))
               )}
-              {filteredRoots.length > itemsPerPage && (
+              {rootTotal > itemsPerPage && (
                 <div className={styles.pagination}>
                   <button
                     type="button"

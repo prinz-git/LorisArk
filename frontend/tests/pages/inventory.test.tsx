@@ -50,14 +50,20 @@ const setupInventory = async ({
   roosts?: any[];
   roots?: any[];
 }) => {
-  (apiFetch as jest.Mock)
-    .mockResolvedValueOnce({
-      email: `${role}@test.com`,
-      full_name: `${role} user`,
-      role,
-    })
-    .mockResolvedValueOnce(roosts)
-    .mockResolvedValueOnce(roots);
+  const mock = apiFetch as jest.Mock;
+  mock.mockResolvedValueOnce({
+    email: `${role}@test.com`,
+    full_name: `${role} user`,
+    role,
+  });
+
+  if (role === "nomad") {
+    mock
+      .mockResolvedValueOnce({ items: roosts, total: roosts.length })
+      .mockResolvedValueOnce({ items: roots, total: roots.length });
+  } else {
+    mock.mockResolvedValueOnce(roosts).mockResolvedValueOnce(roots);
+  }
 
   render(<InventoryPage />);
 };

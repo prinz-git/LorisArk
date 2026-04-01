@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user_email, get_db_session
@@ -9,7 +9,9 @@ from app.schemas.inventory import (
     RoostCreate,
     RoostResponse,
     RoostUpdate,
+    RoostPage,
     RootCreate,
+    RootPage,
     RootResponse,
     RootUpdate,
 )
@@ -20,13 +22,17 @@ from app.services.root_service import RootServiceManager
 router = APIRouter()
 
 
-@router.get("/roosts", response_model=list[RoostResponse])
+@router.get("/roosts", response_model=RoostPage)
 def list_roosts(
+    page: int = Query(1, ge=1),
+    limit: int = Query(6, ge=1, le=50),
+    search: str | None = Query(default=None),
     _: str = Depends(get_current_user_email),
     db: Session = Depends(get_db_session),
 ):
     service = RoostService(RoostRepository(db), UserRepository(db))
-    return service.list_all()
+    items, total = service.list_page(page, limit, search)
+    return {"items": items, "total": total, "page": page, "limit": limit}
 
 
 @router.get("/roosts/mine", response_model=list[RoostResponse])
@@ -70,13 +76,17 @@ def delete_roost(
     return {"message": "Roost deleted"}
 
 
-@router.get("/roots", response_model=list[RootResponse])
+@router.get("/roots", response_model=RootPage)
 def list_roots(
+    page: int = Query(1, ge=1),
+    limit: int = Query(6, ge=1, le=50),
+    search: str | None = Query(default=None),
     _: str = Depends(get_current_user_email),
     db: Session = Depends(get_db_session),
 ):
     service = RootServiceManager(RootRepository(db), UserRepository(db))
-    return service.list_all()
+    items, total = service.list_page(page, limit, search)
+    return {"items": items, "total": total, "page": page, "limit": limit}
 
 
 @router.get("/roots/mine", response_model=list[RootResponse])
