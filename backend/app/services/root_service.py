@@ -40,7 +40,10 @@ class RootServiceManager:
 
     def create(self, email: str, payload: RootCreate) -> RootListing:
         user = self._require_artisan(email)
-        root = RootListing(provider_id=user.id, **payload.dict())
+        data = payload.dict()
+        if data.get("remaining_capacity") is None:
+            data["remaining_capacity"] = data["service_capacity"]
+        root = RootListing(provider_id=user.id, **data)
         return self.root_repo.create(root)
 
     def update(self, email: str, root_id: int, payload: RootUpdate) -> RootListing:
@@ -51,6 +54,8 @@ class RootServiceManager:
         if root.provider_id != user.id:
             raise HTTPException(status_code=403, detail="Not allowed to edit")
         updates = payload.dict(exclude_unset=True)
+        if "service_capacity" in updates and "remaining_capacity" not in updates:
+            updates["remaining_capacity"] = updates["service_capacity"]
         for key, value in updates.items():
             setattr(root, key, value)
         return self.root_repo.update(root)
