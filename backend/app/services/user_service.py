@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from fastapi import HTTPException
 
 from app.core.security import hash_password

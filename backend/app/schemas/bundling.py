@@ -1,4 +1,7 @@
-from datetime import date, datetime
+from __future__ import annotations
+
+from datetime import date as dt_date
+from datetime import datetime
 
 from pydantic import BaseModel, Field
 
@@ -80,7 +83,8 @@ class WifiStatusUpdate(BaseModel):
 
 class CapacityUpdate(BaseModel):
     daily_limit: int = Field(ge=1)
-    date: date | None = None
+    # Avoid name collision with the field name "date" during annotation eval.
+    date: dt_date | None = None
 
 
 class AvailabilityUpdate(BaseModel):

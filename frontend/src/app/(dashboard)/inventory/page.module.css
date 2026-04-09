@@ -153,6 +153,19 @@
   background: #fff;
 }
 
+.checkboxLabel {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-weight: 600;
+  color: var(--color-indigo);
+}
+
+.checkboxLabel input {
+  width: 18px;
+  height: 18px;
+}
+
 .row {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
@@ -221,6 +234,26 @@
   cursor: not-allowed;
 }
 
+.secondary {
+  align-self: flex-start;
+  background: rgba(40, 30, 93, 0.08);
+  color: var(--color-indigo);
+  padding: 0.6rem 1.2rem;
+  border-radius: 999px;
+  border: 1px solid rgba(40, 30, 93, 0.18);
+  font-weight: 600;
+}
+
+.ghost {
+  align-self: flex-start;
+  background: transparent;
+  color: var(--color-muted);
+  padding: 0.4rem 1rem;
+  border-radius: 999px;
+  border: 1px dashed rgba(40, 30, 93, 0.2);
+  font-weight: 600;
+}
+
 .notice {
   margin: 0;
   color: var(--color-muted);
@@ -262,6 +295,98 @@
   font-weight: 600;
   font-size: 0.85rem;
   align-self: center;
+}
+
+.actionCol {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  align-items: flex-end;
+  text-align: right;
+}
+
+.subCard {
+  background: rgba(125, 249, 255, 0.1);
+  border-radius: 1rem;
+  padding: 1rem;
+  border: 1px solid rgba(40, 30, 93, 0.12);
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+.chipRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  justify-content: flex-end;
+}
+
+.chip {
+  background: rgba(40, 30, 93, 0.08);
+  color: var(--color-indigo);
+  border-radius: 999px;
+  padding: 0.25rem 0.7rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.muted {
+  color: var(--color-muted);
+  font-size: 0.85rem;
+}
+
+.inlineControls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  justify-content: flex-end;
+}
+
+.inlineField {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.75rem;
+  color: var(--color-muted);
+}
+
+.inlineField input {
+  border-radius: 999px;
+  border: 1px solid rgba(40, 30, 93, 0.2);
+  padding: 0.35rem 0.8rem;
+}
+
+.previewGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  align-items: start;
+}
+
+.priceTag {
+  font-size: 1.8rem;
+  font-weight: 700;
+  margin-top: 0.4rem;
+}
+
+.timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.timelineItem {
+  padding: 0.6rem 0.8rem;
+  border-radius: 0.8rem;
+  background: #fff;
+  border: 1px solid rgba(40, 30, 93, 0.1);
+}
+
+.actionRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.8rem;
 }
 
 .empty {
