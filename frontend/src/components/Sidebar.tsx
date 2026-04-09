@@ -7,6 +7,7 @@ import styles from "./Sidebar.module.css";
 
 const navItems = [
   { label: "Dashboard", href: "/dashboard" },
+  { label: "Inventory", href: "/inventory" },
   { label: "Profile", href: "/profile" },
   { label: "Users", href: "/users" },
   { label: "Logout", href: "/logout" },
