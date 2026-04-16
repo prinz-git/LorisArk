@@ -5,11 +5,10 @@ import { useRouter } from "next/navigation";
 import Toast from "@/components/Toast";
 import { apiFetch } from "@/lib/api";
 import { getToken } from "@/lib/auth";
-import { defaultRoleOptions } from "@/lib/roles";
 import { testIds } from "@/lib/testids";
 import styles from "./page.module.css";
 
-const serviceCategories = ["Food", "Craft", "Guiding"];
+type Step = "find" | "build" | "bundle";
 
 type Profile = {
   email: string;
@@ -24,6 +23,8 @@ type Roost = {
   bedroom_count: number | null;
   photos: string[];
   wifi_speed_mbps: number;
+  wifi_active: boolean;
+  nightly_rate: number | null;
   place_name: string | null;
   latitude: number | null;
   longitude: number | null;
@@ -34,84 +35,63 @@ type Root = {
   service_category: string;
   service_description: string;
   service_capacity: number;
+  remaining_capacity: number | null;
+  available_days: string | null;
+  service_window_start: string | null;
+  service_window_end: string | null;
+  is_active: boolean;
+  base_price: number | null;
   place_name: string | null;
   latitude: number | null;
   longitude: number | null;
+  distance_km: number | null;
+  walk_minutes: number | null;
+  category_group: string;
+};
+
+type BundlePreview = {
+  nights: number;
+  roost_price: number;
+  services_price: number;
+  total_price: number;
+  timeline: {
+    root_id: number;
+    scheduled_date: string;
+    service_category: string;
+    service_description: string;
+    place_name: string | null;
+  }[];
 };
 
 export default function InventoryPage() {
   const router = useRouter();
+
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [roosts, setRoosts] = useState<Roost[]>([]);
-  const [roots, setRoots] = useState<Root[]>([]);
-  const [roostTotal, setRoostTotal] = useState(0);
-  const [rootTotal, setRootTotal] = useState(0);
   const [toast, setToast] = useState<{ message: string; tone?: "error" }>({
     message: "",
   });
+
+  const [step, setStep] = useState<Step>("find");
   const [searchTerm, setSearchTerm] = useState("");
   const [dateRange, setDateRange] = useState({ start: "", end: "" });
-  const [roostPage, setRoostPage] = useState(1);
-  const [rootPage, setRootPage] = useState(1);
-  const itemsPerPage = 4;
 
-  const [roostForm, setRoostForm] = useState({
-    title: "",
-    bedroom_type: "Private room",
-    bedroom_count: "1",
-    photos: "",
-    wifi_speed_mbps: "100",
-    place_name: "",
-  });
+  const [roostResults, setRoostResults] = useState<Roost[]>([]);
+  const [showRoostResults, setShowRoostResults] = useState(false);
+  const [selectedRoost, setSelectedRoost] = useState<Roost | null>(null);
 
-  const [rootForm, setRootForm] = useState({
-    service_category: serviceCategories[0],
-    service_description: "",
-    service_capacity: "4",
-    place_name: "",
-  });
+  const [rootResults, setRootResults] = useState<Root[]>([]);
+  const [selectedRootIds, setSelectedRootIds] = useState<number[]>([]);
+  const [bundlePreview, setBundlePreview] = useState<BundlePreview | null>(null);
 
-  const roleMeta = useMemo(() => {
-    if (!profile?.role) return null;
-    return (
-      defaultRoleOptions.find((option) => option.id === profile.role) || {
-        title: profile.role,
-        label: "Role",
-      }
-    );
-  }, [profile?.role]);
+  const [roostDetail, setRoostDetail] = useState<Roost | null>(null);
+  const [rootDetail, setRootDetail] = useState<Root | null>(null);
+  const [paymentOpen, setPaymentOpen] = useState(false);
+  const [paying, setPaying] = useState(false);
 
-  const isHost = profile?.role === "host";
-  const isArtisan = profile?.role === "artisan";
-  const isNomad = profile?.role === "nomad";
-
-  const roostPageCount = Math.max(1, Math.ceil(roostTotal / itemsPerPage));
-  const rootPageCount = Math.max(1, Math.ceil(rootTotal / itemsPerPage));
-
-  useEffect(() => {
-    setRoostPage(1);
-    setRootPage(1);
-  }, [searchTerm]);
-
-  const loadData = async (token: string) => {
-    try {
-      const profileData = await apiFetch<Profile>("/profile", { token });
-      setProfile(profileData);
-
-      if (profileData.role === "nomad") {
-        return;
-      } else {
-        const [roostData, rootData] = await Promise.all([
-          apiFetch<Roost[]>("/roosts/mine", { token }),
-          apiFetch<Root[]>("/roots/mine", { token }),
-        ]);
-        setRoosts(roostData);
-        setRoots(rootData);
-      }
-    } catch (error) {
-      setToast({ message: (error as Error).message, tone: "error" });
-    }
-  };
+  const selectedRoots = useMemo(
+    () => rootResults.filter((root) => selectedRootIds.includes(root.id)),
+    [rootResults, selectedRootIds]
+  );
 
   useEffect(() => {
     const token = getToken();
@@ -119,614 +99,461 @@ export default function InventoryPage() {
       router.replace("/login");
       return;
     }
-    loadData(token);
-  }, [router]);
 
-  useEffect(() => {
-    if (!isNomad) {
-      return;
-    }
-    const token = getToken();
-    if (!token) {
-      return;
-    }
-    const fetchNomadPage = async () => {
+    const loadProfile = async () => {
       try {
-        const roostParams = new URLSearchParams();
-        roostParams.set("page", String(roostPage));
-        roostParams.set("limit", String(itemsPerPage));
-        if (searchTerm.trim()) {
-          roostParams.set("search", searchTerm.trim());
-        }
-        const rootParams = new URLSearchParams();
-        rootParams.set("page", String(rootPage));
-        rootParams.set("limit", String(itemsPerPage));
-        if (searchTerm.trim()) {
-          rootParams.set("search", searchTerm.trim());
-        }
-        const [roostData, rootData] = await Promise.all([
-          apiFetch<{ items: Roost[]; total: number }>(
-            `/roosts?${roostParams}`,
-            { token }
-          ),
-          apiFetch<{ items: Root[]; total: number }>(`/roots?${rootParams}`, {
-            token,
-          }),
-        ]);
-        setRoosts(roostData.items);
-        setRoostTotal(roostData.total);
-        setRoots(rootData.items);
-        setRootTotal(rootData.total);
+        const profileData = await apiFetch<Profile>("/profile", { token });
+        setProfile(profileData);
       } catch (error) {
         setToast({ message: (error as Error).message, tone: "error" });
       }
     };
-    fetchNomadPage();
-  }, [isNomad, itemsPerPage, roostPage, rootPage, searchTerm]);
 
-  const submitRoost = async () => {
+    loadProfile();
+  }, [router]);
+
+  const validateFindInputs = () => {
+    if (!dateRange.start || !dateRange.end) {
+      setToast({ message: "Choose start and end dates first.", tone: "error" });
+      return false;
+    }
+    if (new Date(dateRange.end) <= new Date(dateRange.start)) {
+      setToast({ message: "End date must be after start date.", tone: "error" });
+      return false;
+    }
+    return true;
+  };
+
+  const handleFindExplore = async () => {
     const token = getToken();
     if (!token) {
       router.replace("/login");
       return;
     }
-
-    if (!roostForm.title.trim()) {
-      setToast({
-        message: "Add a title before publishing a roost.",
-        tone: "error",
-      });
+    if (!validateFindInputs()) {
       return;
     }
-
-    if (!roostForm.place_name.trim()) {
-      setToast({
-        message: "Add a place name before publishing a roost.",
-        tone: "error",
-      });
-      return;
-    }
-
-    const photos = roostForm.photos
-      .split(",")
-      .map((photo) => photo.trim())
-      .filter(Boolean);
 
     try {
-      await apiFetch<Roost>("/roosts", {
-        method: "POST",
+      const params = new URLSearchParams();
+      params.set("page", "1");
+      params.set("limit", "25");
+      if (searchTerm.trim()) {
+        params.set("search", searchTerm.trim());
+      }
+      const data = await apiFetch<{ items: Roost[] }>(`/roosts?${params.toString()}`, {
         token,
-        body: JSON.stringify({
-          title: roostForm.title,
-          bedroom_type: roostForm.bedroom_type,
-          bedroom_count: roostForm.bedroom_count
-            ? Number(roostForm.bedroom_count)
-            : null,
-          photos,
-          wifi_speed_mbps: Number(roostForm.wifi_speed_mbps),
-          place_name: roostForm.place_name.trim(),
-          latitude: null,
-          longitude: null,
-        }),
       });
-      setRoostForm((prev) => ({
-        ...prev,
-        title: "",
-        photos: "",
-        place_name: "",
-      }));
-      await loadData(token);
-      setToast({ message: "Roost listed successfully." });
+      setRoostResults(data.items || []);
+      setShowRoostResults(true);
+      setSelectedRoost(null);
+      setRootResults([]);
+      setSelectedRootIds([]);
+      setBundlePreview(null);
     } catch (error) {
       setToast({ message: (error as Error).message, tone: "error" });
     }
   };
 
-  const submitRoot = async () => {
+  const handleSelectRoost = async (roost: Roost) => {
     const token = getToken();
     if (!token) {
       router.replace("/login");
       return;
     }
-
-    if (!rootForm.service_description.trim()) {
-      setToast({
-        message: "Add a description before publishing a root.",
-        tone: "error",
-      });
-      return;
-    }
-
-    if (!rootForm.place_name.trim()) {
-      setToast({
-        message: "Add a place name before publishing a root.",
-        tone: "error",
-      });
+    if (!validateFindInputs()) {
       return;
     }
 
     try {
-      await apiFetch<Root>("/roots", {
+      const params = new URLSearchParams();
+      params.set("max_walk_minutes", "15");
+      params.set("stay_start", dateRange.start);
+      params.set("stay_end", dateRange.end);
+      const roots = await apiFetch<Root[]>(
+        `/nomad/roosts/${roost.id}/roots?${params.toString()}`,
+        { token }
+      );
+      setSelectedRoost(roost);
+      setRootResults(roots);
+      setSelectedRootIds([]);
+      setBundlePreview(null);
+      setStep("build");
+    } catch (error) {
+      setToast({ message: (error as Error).message, tone: "error" });
+    }
+  };
+
+  const toggleRootSelection = (rootId: number) => {
+    setSelectedRootIds((prev) =>
+      prev.includes(rootId) ? prev.filter((id) => id !== rootId) : [...prev, rootId]
+    );
+  };
+
+  const handleContinueToBundle = async () => {
+    const token = getToken();
+    if (!token) {
+      router.replace("/login");
+      return;
+    }
+    if (!selectedRoost) {
+      setToast({ message: "Select a roost first.", tone: "error" });
+      return;
+    }
+    if (!selectedRootIds.length) {
+      setToast({ message: "Select at least one root service.", tone: "error" });
+      return;
+    }
+
+    try {
+      const preview = await apiFetch<BundlePreview>("/nomad/bundles/preview", {
         method: "POST",
         token,
         body: JSON.stringify({
-          service_category: rootForm.service_category,
-          service_description: rootForm.service_description,
-          service_capacity: Number(rootForm.service_capacity),
-          place_name: rootForm.place_name.trim(),
-          latitude: null,
-          longitude: null,
+          roost_id: selectedRoost.id,
+          start_date: dateRange.start,
+          end_date: dateRange.end,
+          items: selectedRootIds.map((rootId) => ({
+            root_id: rootId,
+            scheduled_date: dateRange.start,
+            quantity: 1,
+          })),
         }),
       });
-      setRootForm((prev) => ({
-        ...prev,
-        service_description: "",
-        place_name: "",
-      }));
-      await loadData(token);
-      setToast({ message: "Root service listed successfully." });
+      setBundlePreview(preview);
+      setStep("bundle");
     } catch (error) {
       setToast({ message: (error as Error).message, tone: "error" });
+    }
+  };
+
+  const handleBookNow = async () => {
+    const token = getToken();
+    if (!token) {
+      router.replace("/login");
+      return;
+    }
+    if (!selectedRoost || !selectedRootIds.length) {
+      setToast({ message: "Complete roost and root selections first.", tone: "error" });
+      return;
+    }
+
+    try {
+      setPaying(true);
+      const result = await apiFetch<{ bundle_id: number; total_price: number }>(
+        "/nomad/bundles/checkout",
+        {
+          method: "POST",
+          token,
+          body: JSON.stringify({
+            roost_id: selectedRoost.id,
+            start_date: dateRange.start,
+            end_date: dateRange.end,
+            items: selectedRootIds.map((rootId) => ({
+              root_id: rootId,
+              scheduled_date: dateRange.start,
+              quantity: 1,
+            })),
+          }),
+        }
+      );
+      setPaymentOpen(false);
+      setToast({ message: `Booking confirmed. Bundle #${result.bundle_id}` });
+      setStep("find");
+      setShowRoostResults(false);
+      setRoostResults([]);
+      setSelectedRoost(null);
+      setRootResults([]);
+      setSelectedRootIds([]);
+      setBundlePreview(null);
+    } catch (error) {
+      setToast({ message: (error as Error).message, tone: "error" });
+    } finally {
+      setPaying(false);
     }
   };
 
   return (
     <div className={styles.page} data-testid={testIds.inventory.page}>
       <header className={styles.header} data-testid={testIds.inventory.header}>
-        <div>
-          {!isNomad && <p className={styles.kicker}>Inventory Engine</p>}
-          <h1>Roosts & Roots</h1>
-          {!isNomad && (
-            <p className={styles.subtitle}>
-              Publish your space and services so nomads can find work-ready neighbors.
-            </p>
-          )}
-        </div>
-        {roleMeta && (
-          <div
-            className={styles.roleBadge}
-            data-testid={testIds.inventory.profileBadge}
-          >
-            <span className={styles.roleTitle}>{roleMeta.title}</span>
-            <span className={styles.roleLabel}>{roleMeta.label}</span>
-          </div>
-        )}
+        <h1>Intelligent Booking</h1>
+        <p>Find - Select - Bundle - Book</p>
       </header>
 
-      <div className={styles.grid}>
-        {isNomad && (
-          <section className={styles.card}>
-            <div className={styles.cardHeader}>
-              <h2>Find Your Next Roost</h2>
-              <p className={styles.cardHint}>
-                Explore the local Roots and align your work-stay horizon.
-              </p>
-            </div>
-            <div className={styles.searchRow}>
-              <label className={styles.inlineLabel}>
-                Location Search
-                <input
-                  type="text"
-                  className={styles.searchInput}
-                  value={searchTerm}
-                  onChange={(event) => setSearchTerm(event.target.value)}
-                  placeholder="Where are you roosting next?"
-                />
-              </label>
-            </div>
-            <div className={styles.mapPlaceholder}>
-              <div className={styles.mapCanvas}>
-                <div className={styles.mapOverlay}>
-                  <p>Map preview disabled</p>
-                  <span>Enable Google Maps to explore nearby listings.</span>
-                </div>
-              </div>
-              <button type="button" className={styles.mapButton} disabled>
-                Enable Google Maps (Coming Soon)
-              </button>
-            </div>
-            <div className={styles.dateRow}>
-              <label className={styles.inlineLabel}>
-                Start Date
-                <input
-                  type="date"
-                  value={dateRange.start}
-                  onChange={(event) =>
-                    setDateRange((prev) => ({ ...prev, start: event.target.value }))
-                  }
-                />
-              </label>
-              <label className={styles.inlineLabel}>
-                End Date
-                <input
-                  type="date"
-                  value={dateRange.end}
-                  onChange={(event) =>
-                    setDateRange((prev) => ({ ...prev, end: event.target.value }))
-                  }
-                />
-              </label>
-            </div>
-            <button type="button" className={styles.searchButton}>
-              Find & Explore
-            </button>
-          </section>
-        )}
-
-        {isHost && (
-        <section className={styles.card} data-testid={testIds.inventory.roostCard}>
-          <div className={styles.cardHeader}>
-            <h2>Host Listing (Roost)</h2>
-            <p className={styles.cardHint}>
-              List your bedroom, photos, Wi-Fi speed, and map pin.
-            </p>
-          </div>
-          <form
-            className={styles.form}
-            data-testid={testIds.inventory.roostForm}
-            onSubmit={(event) => event.preventDefault()}
-          >
-            <label className={styles.label}>
-              Listing Title
-              <input
-                type="text"
-                value={roostForm.title}
-                onChange={(event) =>
-                  setRoostForm((prev) => ({
-                    ...prev,
-                    title: event.target.value,
-                  }))
-                }
-                placeholder="Garden Suite"
-              />
-            </label>
-            <div className={styles.row}>
-              <label className={styles.label}>
-                Bedroom Type
-                <input
-                  type="text"
-                  value={roostForm.bedroom_type}
-                  onChange={(event) =>
-                    setRoostForm((prev) => ({
-                      ...prev,
-                      bedroom_type: event.target.value,
-                    }))
-                  }
-                />
-              </label>
-              <label className={styles.label}>
-                Bedroom Count
-                <input
-                  type="number"
-                  min={1}
-                  value={roostForm.bedroom_count}
-                  onChange={(event) =>
-                    setRoostForm((prev) => ({
-                      ...prev,
-                      bedroom_count: event.target.value,
-                    }))
-                  }
-                />
-              </label>
-            </div>
-            <label className={styles.label}>
-              Photo URLs (comma separated)
-              <input
-                type="text"
-                value={roostForm.photos}
-                onChange={(event) =>
-                  setRoostForm((prev) => ({
-                    ...prev,
-                    photos: event.target.value,
-                  }))
-                }
-                placeholder="https://... , https://..."
-              />
-            </label>
-            <label className={styles.label}>
-              Wi-Fi Speed (Mbps)
-              <input
-                type="number"
-                min={1}
-                value={roostForm.wifi_speed_mbps}
-                onChange={(event) =>
-                  setRoostForm((prev) => ({
-                    ...prev,
-                    wifi_speed_mbps: event.target.value,
-                  }))
-                }
-              />
-            </label>
-            <label className={styles.label}>
-              Place Name
-              <input
-                type="text"
-                value={roostForm.place_name}
-                onChange={(event) =>
-                  setRoostForm((prev) => ({
-                    ...prev,
-                    place_name: event.target.value,
-                  }))
-                }
-                placeholder="Downtown Kyoto"
-              />
-            </label>
-            <div className={styles.mapPlaceholder}>
-              <div className={styles.mapCanvas}>
-                <div className={styles.mapOverlay}>
-                  <p>Map preview disabled</p>
-                  <span>Enable Google Maps to drop a pin.</span>
-                </div>
-              </div>
-              <button type="button" className={styles.mapButton} disabled>
-                Enable Google Maps (Coming Soon)
-              </button>
-            </div>
-            <button
-              type="button"
-              className={styles.primary}
-              data-testid={testIds.inventory.roostSubmit}
-              onClick={submitRoost}
-              disabled={!isHost}
-            >
-              Publish Roost
-            </button>
-            {!isHost && (
-              <p className={styles.notice}>
-                Switch to the Host role to publish a roost.
-              </p>
-            )}
-          </form>
-
-          <div className={styles.list} data-testid={testIds.inventory.roostList}>
-            <h3>Your Roosts</h3>
-            {roosts.length === 0 ? (
-              <p className={styles.empty}>No roosts yet.</p>
-            ) : (
-              roosts.map((roost) => (
-                <div key={roost.id} className={styles.listItem}>
-                  <div>
-                    <strong>{roost.title}</strong>
-                    <span>
-                      {roost.bedroom_type} • Wi-Fi {roost.wifi_speed_mbps} Mbps
-                    </span>
-                  </div>
-                  <span className={styles.coords}>
-                    {roost.place_name || "Location pending"}
-                  </span>
-                </div>
-              ))
-            )}
-          </div>
-        </section>
-
-        )}
-
-        {isArtisan && (
-        <section className={styles.card} data-testid={testIds.inventory.rootsCard}>
-          <div className={styles.cardHeader}>
-            <h2>Artisan Service (Root)</h2>
-            <p className={styles.cardHint}>
-              Detail your craft and set your service capacity.
-            </p>
-          </div>
-          <form
-            className={styles.form}
-            data-testid={testIds.inventory.rootsForm}
-            onSubmit={(event) => event.preventDefault()}
-          >
-            <label className={styles.label}>
-              Service Category
-              <select
-                value={rootForm.service_category}
-                onChange={(event) =>
-                  setRootForm((prev) => ({
-                    ...prev,
-                    service_category: event.target.value,
-                  }))
-                }
-              >
-                {serviceCategories.map((category) => (
-                  <option key={category} value={category}>
-                    {category}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className={styles.label}>
-              Service Description
-              <textarea
-                rows={3}
-                value={rootForm.service_description}
-                onChange={(event) =>
-                  setRootForm((prev) => ({
-                    ...prev,
-                    service_description: event.target.value,
-                  }))
-                }
-                placeholder="Tell guests what you offer."
-              />
-            </label>
-            <label className={styles.label}>
-              Service Capacity
-              <input
-                type="number"
-                min={1}
-                value={rootForm.service_capacity}
-                onChange={(event) =>
-                  setRootForm((prev) => ({
-                    ...prev,
-                    service_capacity: event.target.value,
-                  }))
-                }
-              />
-            </label>
-            <label className={styles.label}>
-              Place Name
-              <input
-                type="text"
-                value={rootForm.place_name}
-                onChange={(event) =>
-                  setRootForm((prev) => ({
-                    ...prev,
-                    place_name: event.target.value,
-                  }))
-                }
-                placeholder="Old Market Square"
-              />
-            </label>
-            <div className={styles.mapPlaceholder}>
-              <div className={styles.mapCanvas}>
-                <div className={styles.mapOverlay}>
-                  <p>Map preview disabled</p>
-                  <span>Enable Google Maps to drop a pin.</span>
-                </div>
-              </div>
-              <button type="button" className={styles.mapButton} disabled>
-                Enable Google Maps (Coming Soon)
-              </button>
-            </div>
-            <button
-              type="button"
-              className={styles.primary}
-              data-testid={testIds.inventory.rootsSubmit}
-              onClick={submitRoot}
-              disabled={!isArtisan}
-            >
-              Publish Root Service
-            </button>
-            {!isArtisan && (
-              <p className={styles.notice}>
-                Switch to the Artisan role to publish a root.
-              </p>
-            )}
-          </form>
-
-          <div className={styles.list} data-testid={testIds.inventory.rootList}>
-            <h3>Your Roots</h3>
-            {roots.length === 0 ? (
-              <p className={styles.empty}>No roots yet.</p>
-            ) : (
-              roots.map((root) => (
-                <div key={root.id} className={styles.listItem}>
-                  <div>
-                    <strong>{root.service_category}</strong>
-                    <span>
-                      {root.service_description} • Capacity {root.service_capacity}
-                    </span>
-                  </div>
-                  <span className={styles.coords}>
-                    {root.place_name || "Location pending"}
-                  </span>
-                </div>
-              ))
-            )}
-          </div>
-        </section>
-        )}
-      </div>
-
-      {isNomad && (
+      {profile && profile.role !== "nomad" ? (
         <section className={styles.card}>
-          <div className={styles.cardHeader}>
-            <h2>Roosts & Roots</h2>
-            <p className={styles.cardHint}>
-              Browse host spaces and artisan services in one sweep.
-            </p>
-          </div>
-          <div className={styles.split}>
-            <div className={styles.list}>
-              <h3>Roost Listings</h3>
-              {roosts.length === 0 ? (
-                <p className={styles.empty}>
-                  The trail is quiet — no roosts answered your call.
-                </p>
-              ) : (
-                roosts.map((roost) => (
-                  <div key={roost.id} className={styles.listItem}>
-                    <div>
-                      <strong>{roost.title}</strong>
-                      <span>
-                        {roost.bedroom_type} • Wi-Fi {roost.wifi_speed_mbps} Mbps
-                      </span>
-                    </div>
-                    <span className={styles.coords}>
-                      {roost.place_name || "Location pending"}
-                    </span>
-                  </div>
-                ))
-              )}
-              {roostTotal > itemsPerPage && (
-                <div className={styles.pagination}>
-                  <button
-                    type="button"
-                    onClick={() => setRoostPage((prev) => Math.max(1, prev - 1))}
-                    disabled={roostPage === 1}
-                  >
-                    Prev
-                  </button>
-                  <span>
-                    Page {roostPage} of {roostPageCount}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setRoostPage((prev) => Math.min(roostPageCount, prev + 1))
-                    }
-                    disabled={roostPage === roostPageCount}
-                  >
-                    Next
-                  </button>
-                </div>
-              )}
-            </div>
-            <div className={styles.list}>
-              <h3>Root Services</h3>
-              {roots.length === 0 ? (
-                <p className={styles.empty}>
-                  No roots surfaced — the village is still gathering.
-                </p>
-              ) : (
-                roots.map((root) => (
-                  <div key={root.id} className={styles.listItem}>
-                    <div>
-                      <strong>{root.service_category}</strong>
-                      <span>
-                        {root.service_description} • Capacity {root.service_capacity}
-                      </span>
-                    </div>
-                    <span className={styles.coords}>
-                      {root.place_name || "Location pending"}
-                    </span>
-                  </div>
-                ))
-              )}
-              {rootTotal > itemsPerPage && (
-                <div className={styles.pagination}>
-                  <button
-                    type="button"
-                    onClick={() => setRootPage((prev) => Math.max(1, prev - 1))}
-                    disabled={rootPage === 1}
-                  >
-                    Prev
-                  </button>
-                  <span>
-                    Page {rootPage} of {rootPageCount}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setRootPage((prev) => Math.min(rootPageCount, prev + 1))
-                    }
-                    disabled={rootPage === rootPageCount}
-                  >
-                    Next
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
+          <h2>Nomad Booking Flow</h2>
+          <p>This screen is now dedicated to the Nomad booking journey.</p>
         </section>
+      ) : (
+        <>
+          {step === "find" && (
+            <section className={styles.fullWidthCard}>
+              <div className={styles.cardHeader}>
+                <h2>Find Your Next Roost</h2>
+                <p>Search by location and choose your stay dates first.</p>
+              </div>
+
+              <div className={styles.findFields}>
+                <label className={styles.label}>
+                  Location Search
+                  <input
+                    type="text"
+                    value={searchTerm}
+                    onChange={(event) => setSearchTerm(event.target.value)}
+                    placeholder="Where are you roosting next?"
+                  />
+                </label>
+                <label className={styles.label}>
+                  Start Date
+                  <input
+                    type="date"
+                    value={dateRange.start}
+                    onChange={(event) =>
+                      setDateRange((prev) => ({ ...prev, start: event.target.value }))
+                    }
+                  />
+                </label>
+                <label className={styles.label}>
+                  End Date
+                  <input
+                    type="date"
+                    value={dateRange.end}
+                    onChange={(event) =>
+                      setDateRange((prev) => ({ ...prev, end: event.target.value }))
+                    }
+                  />
+                </label>
+              </div>
+
+              <button type="button" className={styles.primary} onClick={handleFindExplore}>
+                Find & Explore
+              </button>
+
+              {showRoostResults && (
+                <div className={styles.resultBlock}>
+                  <h3>Roost Listings</h3>
+                  {roostResults.length === 0 ? (
+                    <p className={styles.empty}>No roosts found for this search.</p>
+                  ) : (
+                    roostResults.map((roost) => (
+                      <article key={roost.id} className={styles.listItem}>
+                        <div>
+                          <strong>{roost.title}</strong>
+                          <p>
+                            {roost.bedroom_type} • Wi-Fi {roost.wifi_speed_mbps} Mbps
+                          </p>
+                          <p>{roost.place_name || "Location pending"}</p>
+                        </div>
+                        <div className={styles.actions}>
+                          <button
+                            type="button"
+                            className={styles.secondary}
+                            onClick={() => handleSelectRoost(roost)}
+                          >
+                            Select
+                          </button>
+                          <button
+                            type="button"
+                            className={styles.ghost}
+                            onClick={() => setRoostDetail(roost)}
+                          >
+                            View
+                          </button>
+                        </div>
+                      </article>
+                    ))
+                  )}
+                </div>
+              )}
+            </section>
+          )}
+
+          {step === "build" && selectedRoost && (
+            <section className={styles.card}>
+              <div className={styles.cardHeader}>
+                <h2>Build Your Stay</h2>
+                <p>
+                  Roots near {selectedRoost.place_name || "your selected roost"} within
+                  15-minute walk.
+                </p>
+              </div>
+
+              <div className={styles.resultBlock}>
+                <h3>Root Services</h3>
+                {rootResults.length === 0 ? (
+                  <p className={styles.empty}>No services available for this roost.</p>
+                ) : (
+                  rootResults.map((root) => {
+                    const isSelected = selectedRootIds.includes(root.id);
+                    return (
+                      <article key={root.id} className={styles.listItem}>
+                        <div>
+                          <strong>{root.service_category}</strong>
+                          <p>{root.service_description}</p>
+                          <p>
+                            {root.place_name || "Location pending"} • {root.walk_minutes ?? "--"}
+                            min walk
+                          </p>
+                        </div>
+                        <div className={styles.actions}>
+                          <button
+                            type="button"
+                            className={isSelected ? styles.selected : styles.secondary}
+                            onClick={() => toggleRootSelection(root.id)}
+                          >
+                            {isSelected ? "Selected" : "Select"}
+                          </button>
+                          <button
+                            type="button"
+                            className={styles.ghost}
+                            onClick={() => setRootDetail(root)}
+                          >
+                            View
+                          </button>
+                        </div>
+                      </article>
+                    );
+                  })
+                )}
+              </div>
+
+              <div className={styles.footerActions}>
+                <button type="button" className={styles.ghost} onClick={() => setStep("find")}>
+                  Back
+                </button>
+                <button
+                  type="button"
+                  className={styles.primary}
+                  onClick={handleContinueToBundle}
+                >
+                  Continue
+                </button>
+              </div>
+            </section>
+          )}
+
+          {step === "bundle" && selectedRoost && (
+            <section className={styles.card}>
+              <div className={styles.cardHeader}>
+                <h2>The Stay Bundle</h2>
+                <p>Review your final selection before purchase.</p>
+              </div>
+
+              <div className={styles.summary}>
+                <h3>Selected Roost</h3>
+                <p>{selectedRoost.title}</p>
+                <p>{selectedRoost.place_name || "Location pending"}</p>
+              </div>
+
+              <div className={styles.summary}>
+                <h3>Selected Root Services</h3>
+                {selectedRoots.length === 0 ? (
+                  <p className={styles.empty}>No services selected.</p>
+                ) : (
+                  selectedRoots.map((root) => (
+                    <p key={root.id}>
+                      {root.service_category}: {root.service_description}
+                    </p>
+                  ))
+                )}
+              </div>
+
+              {bundlePreview && (
+                <div className={styles.summary}>
+                  <h3>Final Total</h3>
+                  <p>Room: {bundlePreview.roost_price}</p>
+                  <p>Services: {bundlePreview.services_price}</p>
+                  <p className={styles.total}>Total: {bundlePreview.total_price}</p>
+                </div>
+              )}
+
+              <div className={styles.footerActions}>
+                <button type="button" className={styles.ghost} onClick={() => setStep("build")}>
+                  Back
+                </button>
+                <button
+                  type="button"
+                  className={styles.primary}
+                  onClick={() => setPaymentOpen(true)}
+                >
+                  Purchase / Book
+                </button>
+              </div>
+            </section>
+          )}
+        </>
+      )}
+
+      {roostDetail && (
+        <div className={styles.modalOverlay} role="dialog" aria-modal="true">
+          <div className={styles.modal}>
+            <h3>{roostDetail.title}</h3>
+            <p>Type: {roostDetail.bedroom_type}</p>
+            <p>Bedrooms: {roostDetail.bedroom_count ?? "N/A"}</p>
+            <p>Wi-Fi: {roostDetail.wifi_speed_mbps} Mbps</p>
+            <p>Rate: {roostDetail.nightly_rate ?? 0}</p>
+            <p>Place: {roostDetail.place_name || "Location pending"}</p>
+            <button
+              type="button"
+              className={styles.secondary}
+              onClick={() => setRoostDetail(null)}
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
+
+      {rootDetail && (
+        <div className={styles.modalOverlay} role="dialog" aria-modal="true">
+          <div className={styles.modal}>
+            <h3>{rootDetail.service_category}</h3>
+            <p>{rootDetail.service_description}</p>
+            <p>Capacity: {rootDetail.service_capacity}</p>
+            <p>Price: {rootDetail.base_price ?? 0}</p>
+            <p>Days: {rootDetail.available_days || "Any"}</p>
+            <p>
+              Window: {rootDetail.service_window_start || "--"} -{" "}
+              {rootDetail.service_window_end || "--"}
+            </p>
+            <button
+              type="button"
+              className={styles.secondary}
+              onClick={() => setRootDetail(null)}
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
+
+      {paymentOpen && (
+        <div className={styles.modalOverlay} role="dialog" aria-modal="true">
+          <div className={styles.modal}>
+            <h3>Payment</h3>
+            <p>This confirms your booking in one checkout.</p>
+            {bundlePreview && <p className={styles.total}>Amount: {bundlePreview.total_price}</p>}
+            <div className={styles.footerActions}>
+              <button
+                type="button"
+                className={styles.ghost}
+                onClick={() => setPaymentOpen(false)}
+                disabled={paying}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className={styles.primary}
+                onClick={handleBookNow}
+                disabled={paying}
+              >
+                {paying ? "Processing..." : "Pay Now"}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       <Toast

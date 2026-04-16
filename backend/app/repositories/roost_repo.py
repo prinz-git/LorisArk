@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
 

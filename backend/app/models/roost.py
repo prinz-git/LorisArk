@@ -1,4 +1,4 @@
-from sqlalchemy import Column, DateTime, Float, ForeignKey, Integer, JSON, String
+from sqlalchemy import Boolean, Column, DateTime, Float, ForeignKey, Integer, JSON, String
 from sqlalchemy.sql import func
 
 from app.core.database import Base
@@ -14,6 +14,8 @@ class RoostListing(Base):
     bedroom_count = Column(Integer)
     photos = Column(JSON, default=list)
     wifi_speed_mbps = Column(Float, nullable=False)
+    wifi_active = Column(Boolean, nullable=False, default=True)
+    nightly_rate = Column(Float)
     place_name = Column(String)
     latitude = Column(Float)
     longitude = Column(Float)
