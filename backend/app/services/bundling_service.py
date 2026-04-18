@@ -6,7 +6,7 @@ import math
 
 from fastapi import HTTPException
 
-from app.models import Bundle, BundleItem, RootListing, RoostListing, ServiceTicket
+from app.models import Bundle, BundleItem, RootListing, ServiceTicket
 from app.repositories.bundling_repo import (
     BundleItemRepository,
     BundleRepository,
@@ -197,7 +197,7 @@ class BundlingService:
         return results
 
     def preview_bundle(self, email: str, payload: BundlePreviewRequest) -> dict:
-        user = self._require_nomad(email)
+        self._require_nomad(email)
         roost = self.roost_repo.get_by_id(payload.roost_id)
         if not roost:
             raise HTTPException(status_code=404, detail="Roost not found")

@@ -2,15 +2,15 @@ import { test, expect } from "@playwright/test";
 import { APIClient } from "../../core/APIClient";
 import { AuthAPI } from "../../api/AuthAPI";
 import { createUser } from "../../data/userFactory";
+import { cleanupUser } from "../../data/userCleanup";
 import { expectStatus } from "../../core/assertions";
 
 test("User can register and login", async () => {
   const request = await APIClient.create();
   const auth = new AuthAPI(request);
+  const user = createUser({ role: "host" });
 
   try {
-    const user = createUser({ role: "host" });
-
     const register = await auth.register(user);
     expectStatus(register, 200);
 
@@ -21,5 +21,6 @@ test("User can register and login", async () => {
     expect(body.access_token).toBeTruthy();
   } finally {
     await request.dispose();
+    await cleanupUser(user);
   }
 });
