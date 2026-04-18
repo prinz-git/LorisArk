@@ -28,20 +28,20 @@ class RootPersonalizedResponse(BaseModel):
 
 class BundleItemRequest(BaseModel):
     root_id: int
-    scheduled_date: date
+    scheduled_date: dt_date
     quantity: int = Field(default=1, ge=1)
 
 
 class BundlePreviewRequest(BaseModel):
     roost_id: int
-    start_date: date
-    end_date: date
+    start_date: dt_date
+    end_date: dt_date
     items: list[BundleItemRequest] = Field(default_factory=list)
 
 
 class BundleTimelineItem(BaseModel):
     root_id: int
-    scheduled_date: date
+    scheduled_date: dt_date
     service_category: str
     service_description: str
     place_name: str | None
@@ -72,8 +72,9 @@ class HostStaySummaryItem(BaseModel):
     bundle_id: int
     nomad_name: str | None
     roost_id: int
-    start_date: date
-    end_date: date
+    roost_title: str | None = None
+    start_date: dt_date
+    end_date: dt_date
     services: list[str]
 
 
@@ -101,6 +102,11 @@ class ServiceTicketResponse(BaseModel):
     host_id: int
     status: str
     note: str | None
+    service_name: str | None = None
+    service_category: str | None = None
+    roost_name: str | None = None
+    scheduled_date: dt_date | None = None
+    service_time: str | None = None
     created_at: datetime | None
 
     class Config:

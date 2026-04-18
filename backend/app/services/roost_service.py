@@ -42,7 +42,9 @@ class RoostService:
 
     def create(self, email: str, payload: RoostCreate) -> RoostListing:
         user = self._require_host(email)
-        roost = RoostListing(provider_id=user.id, **payload.dict())
+        data = payload.dict()
+        data.pop("status", None)
+        roost = RoostListing(provider_id=user.id, **data)
         return self.roost_repo.create(roost)
 
     def update(self, email: str, roost_id: int, payload: RoostUpdate) -> RoostListing:
@@ -53,6 +55,7 @@ class RoostService:
         if roost.provider_id != user.id:
             raise HTTPException(status_code=403, detail="Not allowed to edit")
         updates = payload.dict(exclude_unset=True)
+        updates.pop("status", None)
         for key, value in updates.items():
             setattr(roost, key, value)
         return self.roost_repo.update(roost)

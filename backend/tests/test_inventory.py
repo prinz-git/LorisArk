@@ -28,12 +28,22 @@ def test_host_can_create_roost(client):
         "bedroom_count": 1,
         "photos": ["https://example.com/room.jpg"],
         "wifi_speed_mbps": 180,
+        "status": "hidden",
+        "nightly_rate": 145,
+        "availability_ranges": [
+            {"start_date": "2026-04-20", "end_date": "2026-04-24"},
+            {"start_date": "2026-05-01", "end_date": "2026-05-06"},
+        ],
         "place_name": "Berlin, Germany",
     }
     create_resp = client.post(
         "/roosts", json=payload, headers=_auth_headers(token)
     )
     assert create_resp.status_code == 200
+    body = create_resp.json()
+    assert body["wifi_active"] is False
+    assert body["nightly_rate"] == 145
+    assert len(body["availability_ranges"]) == 2
 
     mine_resp = client.get("/roosts/mine", headers=_auth_headers(token))
     assert mine_resp.status_code == 200
@@ -163,6 +173,7 @@ def test_root_pagination_and_search(client):
 
 def test_roost_update_and_delete(client):
     _, host_token = _register_user(client, "host")
+    _, nomad_token = _register_user(client, "nomad")
     payload = {
         "title": "Harbor Loft",
         "bedroom_type": "Private room",
@@ -192,9 +203,21 @@ def test_roost_update_and_delete(client):
     assert mine.status_code == 200
     assert len(mine.json()) == 0
 
+    public = client.get("/roosts?page=1&limit=10", headers=_auth_headers(nomad_token))
+    assert public.status_code == 200
+    assert public.json()["total"] == 0
+
+    update_after_delete = client.put(
+        f"/roosts/{roost_id}",
+        json={"title": "Should Fail"},
+        headers=_auth_headers(host_token),
+    )
+    assert update_after_delete.status_code == 404
+
 
 def test_root_update_and_delete(client):
     _, artisan_token = _register_user(client, "artisan")
+    _, nomad_token = _register_user(client, "nomad")
     payload = {
         "service_category": "Craft",
         "service_description": "Weaving",
@@ -221,6 +244,17 @@ def test_root_update_and_delete(client):
     mine = client.get("/roots/mine", headers=_auth_headers(artisan_token))
     assert mine.status_code == 200
     assert len(mine.json()) == 0
+
+    public = client.get("/roots?page=1&limit=10", headers=_auth_headers(nomad_token))
+    assert public.status_code == 200
+    assert public.json()["total"] == 0
+
+    update_after_delete = client.put(
+        f"/roots/{root_id}",
+        json={"service_description": "Should Fail"},
+        headers=_auth_headers(artisan_token),
+    )
+    assert update_after_delete.status_code == 404
 
 
 def test_mine_endpoints_filter_by_owner(client):

@@ -113,6 +113,11 @@ def test_nomad_personalization_preview_and_checkout_flow(client):
     tickets_body = tickets.json()
     assert len(tickets_body) == 1
     assert nomad_payload["full_name"] in tickets_body[0]["note"]
+    assert tickets_body[0]["service_name"] == "Morning coffee"
+    assert tickets_body[0]["service_category"] == "Food"
+    assert tickets_body[0]["roost_name"] == "Loft Stay"
+    assert tickets_body[0]["scheduled_date"] == str(service_day)
+    assert tickets_body[0]["service_time"] == "07:00"
 
     partnerships = client.get(
         f"/host/roosts/{roost['id']}/partnerships",
@@ -127,6 +132,7 @@ def test_nomad_personalization_preview_and_checkout_flow(client):
     )
     assert summaries.status_code == 200
     assert len(summaries.json()) == 1
+    assert summaries.json()[0]["roost_title"] == "Loft Stay"
 
 
 def test_wifi_status_blocks_preview(client):

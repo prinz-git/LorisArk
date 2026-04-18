@@ -332,6 +332,7 @@ class BundlingService:
     def host_stay_summaries(self, email: str) -> list[dict]:
         host = self._require_host(email)
         roosts = self.roost_repo.list_by_provider(host.id)
+        roosts_by_id = {roost.id: roost for roost in roosts}
         roost_ids = [roost.id for roost in roosts]
         bundles = self.bundle_repo.list_by_roosts(roost_ids)
         bundle_ids = [bundle.id for bundle in bundles]
@@ -354,6 +355,11 @@ class BundlingService:
                     "bundle_id": bundle.id,
                     "nomad_name": nomad.full_name if nomad else None,
                     "roost_id": bundle.roost_id,
+                    "roost_title": (
+                        roosts_by_id.get(bundle.roost_id).title
+                        if roosts_by_id.get(bundle.roost_id)
+                        else None
+                    ),
                     "start_date": bundle.start_date,
                     "end_date": bundle.end_date,
                     "services": services,
@@ -408,11 +414,54 @@ class BundlingService:
             "service_window_end": root.service_window_end,
         }
 
-    def list_tickets(self, email: str) -> list[ServiceTicket]:
+    def list_tickets(self, email: str) -> list[dict]:
         artisan = self._require_artisan(email)
         roots = self.root_repo.list_by_provider(artisan.id)
         root_ids = [root.id for root in roots]
-        return self.ticket_repo.list_by_provider(root_ids)
+        tickets = self.ticket_repo.list_by_provider(root_ids)
+        if not tickets:
+            return []
+
+        roots_by_id = {root.id: root for root in roots}
+        bundle_ids = list({ticket.bundle_id for ticket in tickets})
+        bundles = self.bundle_repo.list_by_ids(bundle_ids)
+        bundles_by_id = {bundle.id: bundle for bundle in bundles}
+        roost_ids = list({bundle.roost_id for bundle in bundles})
+        roosts_by_id = {
+            roost.id: roost for roost in self.roost_repo.list_all() if roost.id in roost_ids
+        }
+        bundle_items = self.bundle_item_repo.list_by_bundles(bundle_ids)
+        schedule_by_bundle_root: dict[tuple[int, int], date] = {}
+        for item in bundle_items:
+            key = (item.bundle_id, item.root_id)
+            if key not in schedule_by_bundle_root:
+                schedule_by_bundle_root[key] = item.scheduled_date
+
+        enriched = []
+        for ticket in tickets:
+            root = roots_by_id.get(ticket.root_id)
+            bundle = bundles_by_id.get(ticket.bundle_id)
+            roost = roosts_by_id.get(bundle.roost_id) if bundle else None
+            enriched.append(
+                {
+                    "id": ticket.id,
+                    "bundle_id": ticket.bundle_id,
+                    "root_id": ticket.root_id,
+                    "nomad_id": ticket.nomad_id,
+                    "host_id": ticket.host_id,
+                    "status": ticket.status,
+                    "note": ticket.note,
+                    "service_name": root.service_description if root else None,
+                    "service_category": root.service_category if root else None,
+                    "roost_name": roost.title if roost else None,
+                    "scheduled_date": schedule_by_bundle_root.get(
+                        (ticket.bundle_id, ticket.root_id)
+                    ),
+                    "service_time": root.service_window_start if root else None,
+                    "created_at": ticket.created_at,
+                }
+            )
+        return enriched
 
     def _validate_items(
         self,

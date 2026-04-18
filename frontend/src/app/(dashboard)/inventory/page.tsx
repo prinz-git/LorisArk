@@ -103,6 +103,10 @@ export default function InventoryPage() {
     const loadProfile = async () => {
       try {
         const profileData = await apiFetch<Profile>("/profile", { token });
+        if (profileData.role !== "nomad") {
+          router.replace("/dashboard");
+          return;
+        }
         setProfile(profileData);
       } catch (error) {
         setToast({ message: (error as Error).message, tone: "error" });
@@ -280,12 +284,7 @@ export default function InventoryPage() {
         <p>Find - Select - Bundle - Book</p>
       </header>
 
-      {profile && profile.role !== "nomad" ? (
-        <section className={styles.card}>
-          <h2>Nomad Booking Flow</h2>
-          <p>This screen is now dedicated to the Nomad booking journey.</p>
-        </section>
-      ) : (
+      {profile ? (
         <>
           {step === "find" && (
             <section className={styles.fullWidthCard}>
@@ -483,7 +482,7 @@ export default function InventoryPage() {
             </section>
           )}
         </>
-      )}
+      ) : null}
 
       {roostDetail && (
         <div className={styles.modalOverlay} role="dialog" aria-modal="true">
