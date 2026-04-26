@@ -21,6 +21,7 @@ export const testIds = {
   },
   dashboard: {
     greeting: "dashboard-greeting",
+    toast: "dashboard-toast",
   },
   users: {
     title: "users-title",

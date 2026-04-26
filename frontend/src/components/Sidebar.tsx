@@ -2,16 +2,22 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
 import { usePathname } from "next/navigation";
+import { apiFetch } from "@/lib/api";
+import { getToken } from "@/lib/auth";
 import styles from "./Sidebar.module.css";
 
-const navItems = [
+const baseNavItems = [
   { label: "Dashboard", href: "/dashboard" },
-  { label: "Inventory", href: "/inventory" },
   { label: "Profile", href: "/profile" },
   { label: "Users", href: "/users" },
   { label: "Logout", href: "/logout" },
 ];
+
+type Profile = {
+  role: "nomad" | "host" | "artisan";
+};
 
 type SidebarProps = {
   isOpen?: boolean;
@@ -19,6 +25,36 @@ type SidebarProps = {
 
 export default function Sidebar({ isOpen = true }: SidebarProps) {
   const pathname = usePathname();
+  const [role, setRole] = useState<Profile["role"] | null>(null);
+
+  useEffect(() => {
+    const token = getToken();
+    if (!token) {
+      return;
+    }
+
+    const load = async () => {
+      try {
+        const profile = await apiFetch<Profile>("/profile", { token });
+        setRole(profile.role);
+      } catch {
+        setRole(null);
+      }
+    };
+
+    load();
+  }, []);
+
+  const navItems = useMemo(() => {
+    if (role === "nomad") {
+      return [
+        baseNavItems[0],
+        { label: "Inventory", href: "/inventory" },
+        ...baseNavItems.slice(1),
+      ];
+    }
+    return baseNavItems;
+  }, [role]);
 
   return (
     <aside

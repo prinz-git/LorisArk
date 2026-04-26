@@ -17,6 +17,7 @@ class RootListing(Base):
     service_window_start = Column(String)
     service_window_end = Column(String)
     is_active = Column(Boolean, nullable=False, default=True)
+    is_deleted = Column(Boolean, nullable=False, default=False)
     base_price = Column(Float)
     place_name = Column(String)
     latitude = Column(Float)

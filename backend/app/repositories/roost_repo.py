@@ -11,10 +11,14 @@ class RoostRepository:
         self.db = db
 
     def get_by_id(self, roost_id: int) -> RoostListing | None:
-        return self.db.query(RoostListing).filter(RoostListing.id == roost_id).first()
+        return (
+            self.db.query(RoostListing)
+            .filter(RoostListing.id == roost_id, RoostListing.is_deleted.is_(False))
+            .first()
+        )
 
     def list_all(self, search: str | None = None) -> list[RoostListing]:
-        query = self.db.query(RoostListing)
+        query = self.db.query(RoostListing).filter(RoostListing.is_deleted.is_(False))
         if search:
             like = f"%{search}%"
             query = query.filter(
@@ -29,7 +33,7 @@ class RoostRepository:
     def list_page(
         self, page: int, limit: int, search: str | None = None
     ) -> tuple[list[RoostListing], int]:
-        query = self.db.query(RoostListing)
+        query = self.db.query(RoostListing).filter(RoostListing.is_deleted.is_(False))
         if search:
             like = f"%{search}%"
             query = query.filter(
@@ -51,7 +55,10 @@ class RoostRepository:
     def list_by_provider(self, provider_id: int) -> list[RoostListing]:
         return (
             self.db.query(RoostListing)
-            .filter(RoostListing.provider_id == provider_id)
+            .filter(
+                RoostListing.provider_id == provider_id,
+                RoostListing.is_deleted.is_(False),
+            )
             .all()
         )
 
@@ -68,5 +75,6 @@ class RoostRepository:
         return roost
 
     def delete(self, roost: RoostListing) -> None:
-        self.db.delete(roost)
+        roost.is_deleted = True
+        self.db.add(roost)
         self.db.commit()

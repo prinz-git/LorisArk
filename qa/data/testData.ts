@@ -2,6 +2,7 @@ import { APIClient } from "../core/APIClient";
 import { AuthAPI } from "../api/AuthAPI";
 import { UsersAPI } from "../api/UsersAPI";
 import { createUser, User } from "./userFactory";
+import { cleanupUser } from "./userCleanup";
 import { expectStatus } from "../core/assertions";
 
 export type SeededUser = {
@@ -43,23 +44,7 @@ export async function seedUser(overrides: Partial<User> = {}): Promise<SeededUse
   }
 
   const cleanup = async () => {
-    const cleanupRequest = await APIClient.create();
-    const cleanupAuth = new AuthAPI(cleanupRequest);
-
-    try {
-      const login = await cleanupAuth.login(user.email, user.password);
-      if (login.status() !== 200) {
-        return;
-      }
-
-      const token = (await login.json()).access_token;
-      const authed = await APIClient.create(token);
-      const users = new UsersAPI(authed);
-      await users.deleteProfile();
-      await authed.dispose();
-    } finally {
-      await cleanupRequest.dispose();
-    }
+    await cleanupUser(user);
   };
 
   return { user, id, cleanup };

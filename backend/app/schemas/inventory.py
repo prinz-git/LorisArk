@@ -1,6 +1,20 @@
 from __future__ import annotations
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, root_validator, validator
+
+
+class RoostAvailabilityRange(BaseModel):
+    start_date: str
+    end_date: str
+
+
+def _coerce_live_hidden_status(values: dict) -> dict:
+    status = values.get("status")
+    if status is None:
+        return values
+    normalized = str(status).strip().lower()
+    values["wifi_active"] = normalized == "live"
+    return values
 
 
 class RoostCreate(BaseModel):
@@ -10,10 +24,25 @@ class RoostCreate(BaseModel):
     photos: list[str] = Field(default_factory=list)
     wifi_speed_mbps: float
     wifi_active: bool = True
+    status: str | None = None
     nightly_rate: float | None = None
+    availability_ranges: list[RoostAvailabilityRange] = Field(default_factory=list)
     place_name: str
     latitude: float | None = None
     longitude: float | None = None
+
+    @root_validator(pre=True)
+    def _map_status_to_wifi(cls, values):
+        return _coerce_live_hidden_status(values)
+
+    @validator("status")
+    def _validate_status(cls, value: str | None):
+        if value is None:
+            return value
+        normalized = value.strip().lower()
+        if normalized not in {"live", "hidden"}:
+            raise ValueError("status must be 'live' or 'hidden'")
+        return normalized
 
 
 class RoostUpdate(BaseModel):
@@ -23,10 +52,25 @@ class RoostUpdate(BaseModel):
     photos: list[str] | None = None
     wifi_speed_mbps: float | None = None
     wifi_active: bool | None = None
+    status: str | None = None
     nightly_rate: float | None = None
+    availability_ranges: list[RoostAvailabilityRange] | None = None
     place_name: str | None = None
     latitude: float | None = None
     longitude: float | None = None
+
+    @root_validator(pre=True)
+    def _map_status_to_wifi(cls, values):
+        return _coerce_live_hidden_status(values)
+
+    @validator("status")
+    def _validate_status(cls, value: str | None):
+        if value is None:
+            return value
+        normalized = value.strip().lower()
+        if normalized not in {"live", "hidden"}:
+            raise ValueError("status must be 'live' or 'hidden'")
+        return normalized
 
 
 class RoostResponse(BaseModel):
@@ -39,6 +83,7 @@ class RoostResponse(BaseModel):
     wifi_speed_mbps: float
     wifi_active: bool
     nightly_rate: float | None
+    availability_ranges: list[RoostAvailabilityRange] | None
     place_name: str | None
     latitude: float | None
     longitude: float | None

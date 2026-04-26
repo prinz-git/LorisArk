@@ -39,8 +39,10 @@ async function cleanupAuthedContext(context?: AuthedContext) {
 
 test("Host can manage roosts", async ({ auth }) => {
   let ctx: AuthedContext | undefined;
+  let nomadCtx: AuthedContext | undefined;
   try {
     ctx = await createAuthedContext(auth, "host");
+    nomadCtx = await createAuthedContext(auth, "nomad");
 
     const create = await ctx.inventory.createRoost({
       title: "Garden Suite",
@@ -75,15 +77,30 @@ test("Host can manage roosts", async ({ auth }) => {
     expectStatus(mineAfter, 200);
     const mineAfterBody = await mineAfter.json();
     expect(mineAfterBody.length).toBe(0);
+
+    const updateAfterDelete = await ctx.inventory.updateRoost(created.id, {
+      title: "Should fail",
+    });
+    expectStatus(updateAfterDelete, 404);
+
+    const publicList = await nomadCtx.inventory.listRoosts({ page: 1, limit: 20 });
+    expectStatus(publicList, 200);
+    const publicBody = await publicList.json();
+    expect(publicBody.items.some((item: { id: number }) => item.id === created.id)).toBe(
+      false
+    );
   } finally {
+    await cleanupAuthedContext(nomadCtx);
     await cleanupAuthedContext(ctx);
   }
 });
 
 test("Artisan can manage roots", async ({ auth }) => {
   let ctx: AuthedContext | undefined;
+  let nomadCtx: AuthedContext | undefined;
   try {
     ctx = await createAuthedContext(auth, "artisan");
+    nomadCtx = await createAuthedContext(auth, "nomad");
 
     const create = await ctx.inventory.createRoot({
       service_category: "Food",
@@ -116,7 +133,20 @@ test("Artisan can manage roots", async ({ auth }) => {
     expectStatus(mineAfter, 200);
     const mineAfterBody = await mineAfter.json();
     expect(mineAfterBody.length).toBe(0);
+
+    const updateAfterDelete = await ctx.inventory.updateRoot(created.id, {
+      service_description: "Should fail",
+    });
+    expectStatus(updateAfterDelete, 404);
+
+    const publicList = await nomadCtx.inventory.listRoots({ page: 1, limit: 20 });
+    expectStatus(publicList, 200);
+    const publicBody = await publicList.json();
+    expect(publicBody.items.some((item: { id: number }) => item.id === created.id)).toBe(
+      false
+    );
   } finally {
+    await cleanupAuthedContext(nomadCtx);
     await cleanupAuthedContext(ctx);
   }
 });
