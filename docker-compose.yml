@@ -9,6 +9,7 @@ services:
       APP_ENV: ${APP_ENV:-local}
       SECRET_KEY: ${SECRET_KEY:-change-me}
       DATABASE_URL: ${DATABASE_URL:-sqlite:////app/data/users.db}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:3000,http://127.0.0.1:3000,http://192.168.0.35:3000}
     volumes:
       - ./data:/app/data
     command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
@@ -26,7 +27,7 @@ services:
     ports:
       - "3000:3000"
     environment:
-      NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://localhost:8000}
+      NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://192.168.0.35:8000}
     depends_on:
       - api
 
@@ -41,6 +42,7 @@ services:
       SECRET_KEY: ${SECRET_KEY:-change-me}
       DATABASE_URL: ${DATABASE_URL:-sqlite:////app/data/users.db}
       WEB_CONCURRENCY: "2"
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:3000,http://127.0.0.1:3000,http://192.168.0.35:3000}
     volumes:
       - ./data:/app/data
     command: ["gunicorn", "app.main:app", "-k", "uvicorn.workers.UvicornWorker", "-w", "2", "-b", "0.0.0.0:8000"]

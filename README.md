@@ -56,4 +56,5 @@ Environment variables:
 - `APP_ENV`: `local` | `test` | `prod` (defaults to `local`)
 - `SECRET_KEY`: required in non-local environments
 - `DATABASE_URL`: default `sqlite:///./users.db`
+- `ALLOWED_ORIGINS`: comma-separated CORS origins (default includes `http://localhost:3000`, `http://127.0.0.1:3000`)
 - `ACCESS_TOKEN_EXPIRE_MINUTES`: default `60`
