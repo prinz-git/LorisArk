@@ -25,6 +25,11 @@ class BundleRepository:
             return []
         return self.db.query(Bundle).filter(Bundle.roost_id.in_(roost_ids)).all()
 
+    def list_by_ids(self, bundle_ids: list[int]) -> list[Bundle]:
+        if not bundle_ids:
+            return []
+        return self.db.query(Bundle).filter(Bundle.id.in_(bundle_ids)).all()
+
 
 class BundleItemRepository:
     def __init__(self, db: Session):
@@ -54,7 +59,12 @@ class ServiceTicketRepository:
     def list_by_provider(self, root_ids: list[int]) -> list[ServiceTicket]:
         if not root_ids:
             return []
-        return self.db.query(ServiceTicket).filter(ServiceTicket.root_id.in_(root_ids)).all()
+        return (
+            self.db.query(ServiceTicket)
+            .filter(ServiceTicket.root_id.in_(root_ids))
+            .order_by(ServiceTicket.created_at.desc())
+            .all()
+        )
 
 
 class RootDailyCapacityRepository:

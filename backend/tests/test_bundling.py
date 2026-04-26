@@ -113,6 +113,11 @@ def test_nomad_personalization_preview_and_checkout_flow(client):
     tickets_body = tickets.json()
     assert len(tickets_body) == 1
     assert nomad_payload["full_name"] in tickets_body[0]["note"]
+    assert tickets_body[0]["service_name"] == "Morning coffee"
+    assert tickets_body[0]["service_category"] == "Food"
+    assert tickets_body[0]["roost_name"] == "Loft Stay"
+    assert tickets_body[0]["scheduled_date"] == str(service_day)
+    assert tickets_body[0]["service_time"] == "07:00"
 
     partnerships = client.get(
         f"/host/roosts/{roost['id']}/partnerships",
@@ -127,6 +132,7 @@ def test_nomad_personalization_preview_and_checkout_flow(client):
     )
     assert summaries.status_code == 200
     assert len(summaries.json()) == 1
+    assert summaries.json()[0]["roost_title"] == "Loft Stay"
 
 
 def test_wifi_status_blocks_preview(client):
@@ -267,6 +273,31 @@ def test_walk_time_filter_excludes_far_services(client):
     )
     assert personalized.status_code == 200
     assert all(item["place_name"] != "Far Town" for item in personalized.json())
+
+
+def test_soft_deleted_root_hidden_from_personalized_results(client):
+    _, host_token = _register_user(client, "host")
+    _, artisan_token = _register_user(client, "artisan")
+    _, nomad_token = _register_user(client, "nomad")
+
+    roost = _create_roost(client, host_token)
+    service_day = date(2026, 4, 11)
+    root = _create_root(client, artisan_token, _weekday_label(service_day))
+
+    delete = client.delete(
+        f"/roots/{root['id']}",
+        headers=_auth_headers(artisan_token),
+    )
+    assert delete.status_code == 200
+
+    personalized = client.get(
+        f"/nomad/roosts/{roost['id']}/roots?max_walk_minutes=15"
+        f"&stay_start=2026-04-10&stay_end=2026-04-12",
+        headers=_auth_headers(nomad_token),
+    )
+    assert personalized.status_code == 200
+    items = personalized.json()
+    assert all(item["id"] != root["id"] for item in items)
 
 
 def test_host_cannot_access_other_host_partnerships(client):

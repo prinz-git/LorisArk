@@ -51,7 +51,7 @@ def _ensure_inventory_table(engine: Engine, inspector, table_name: str) -> None:
     lat_nullable = columns.get("latitude", {}).get("nullable", True)
     lon_nullable = columns.get("longitude", {}).get("nullable", True)
     if table_name == "roosts":
-        required = {"wifi_active", "nightly_rate"}
+        required = {"wifi_active", "nightly_rate", "availability_ranges", "is_deleted"}
     else:
         required = {
             "remaining_capacity",
@@ -59,6 +59,7 @@ def _ensure_inventory_table(engine: Engine, inspector, table_name: str) -> None:
             "service_window_start",
             "service_window_end",
             "is_active",
+            "is_deleted",
             "base_price",
         }
     has_required = required.issubset(set(columns.keys()))
@@ -84,6 +85,8 @@ def _ensure_inventory_table(engine: Engine, inspector, table_name: str) -> None:
         column_types = {
             "wifi_active": "BOOLEAN",
             "nightly_rate": "FLOAT",
+            "availability_ranges": "JSON",
+            "is_deleted": "BOOLEAN",
             "remaining_capacity": "INTEGER",
             "available_days": "VARCHAR",
             "service_window_start": "VARCHAR",
@@ -99,6 +102,10 @@ def _ensure_inventory_table(engine: Engine, inspector, table_name: str) -> None:
                         f"ALTER TABLE {table_name} ADD COLUMN {column_name} {column_type}"
                     )
                 )
+        if "is_deleted" in required:
+            connection.execute(
+                text(f"UPDATE {table_name} SET is_deleted = 0 WHERE is_deleted IS NULL")
+            )
 
 
 def _rebuild_sqlite_inventory_table(
@@ -115,7 +122,9 @@ def _rebuild_sqlite_inventory_table(
             photos JSON,
             wifi_speed_mbps FLOAT NOT NULL,
             wifi_active BOOLEAN NOT NULL,
+            is_deleted BOOLEAN NOT NULL,
             nightly_rate FLOAT,
+            availability_ranges JSON,
             place_name VARCHAR,
             latitude FLOAT,
             longitude FLOAT,
@@ -132,7 +141,9 @@ def _rebuild_sqlite_inventory_table(
             "photos",
             "wifi_speed_mbps",
             "wifi_active",
+            "is_deleted",
             "nightly_rate",
+            "availability_ranges",
             "latitude",
             "longitude",
             "created_at",
@@ -151,6 +162,7 @@ def _rebuild_sqlite_inventory_table(
             service_window_start VARCHAR,
             service_window_end VARCHAR,
             is_active BOOLEAN NOT NULL,
+            is_deleted BOOLEAN NOT NULL,
             base_price FLOAT,
             place_name VARCHAR,
             latitude FLOAT,
@@ -170,6 +182,7 @@ def _rebuild_sqlite_inventory_table(
             "service_window_start",
             "service_window_end",
             "is_active",
+            "is_deleted",
             "base_price",
             "latitude",
             "longitude",
@@ -185,6 +198,8 @@ def _rebuild_sqlite_inventory_table(
         else:
             if column in {"wifi_active", "is_active"}:
                 select_columns.append("1 AS {}".format(column))
+            elif column == "is_deleted":
+                select_columns.append("0 AS is_deleted")
             elif column == "remaining_capacity":
                 if "service_capacity" in existing_columns:
                     select_columns.append("service_capacity AS remaining_capacity")
