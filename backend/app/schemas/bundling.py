@@ -62,6 +62,24 @@ class BundleCheckoutResponse(BaseModel):
     tickets_created: int
 
 
+class NomadBookingItem(BaseModel):
+    bundle_id: int
+    roost_id: int
+    roost_title: str | None
+    roost_place_name: str | None
+    start_date: dt_date
+    end_date: dt_date
+    total_price: float
+    status: str
+    services: list[str]
+
+
+class NomadBookingsResponse(BaseModel):
+    active_upcoming: list[NomadBookingItem]
+    past_stays: list[NomadBookingItem]
+    cancelled_pending: list[NomadBookingItem]
+
+
 class HostPartnership(BaseModel):
     artisan_id: int
     artisan_name: str | None

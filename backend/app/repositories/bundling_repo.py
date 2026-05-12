@@ -30,6 +30,23 @@ class BundleRepository:
             return []
         return self.db.query(Bundle).filter(Bundle.id.in_(bundle_ids)).all()
 
+    def list_by_nomad(self, nomad_id: int) -> list[Bundle]:
+        return (
+            self.db.query(Bundle)
+            .filter(Bundle.nomad_id == nomad_id)
+            .order_by(Bundle.start_date.desc(), Bundle.id.desc())
+            .all()
+        )
+
+    def get_by_id(self, bundle_id: int) -> Bundle | None:
+        return self.db.query(Bundle).filter(Bundle.id == bundle_id).first()
+
+    def update(self, bundle: Bundle) -> Bundle:
+        self.db.add(bundle)
+        self.db.commit()
+        self.db.refresh(bundle)
+        return bundle
+
 
 class BundleItemRepository:
     def __init__(self, db: Session):

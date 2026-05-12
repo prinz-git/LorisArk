@@ -210,6 +210,11 @@ export default function DashboardPage() {
         const profileData = await apiFetch<Profile>("/profile", { token });
         setProfile(profileData);
 
+        if (profileData.role === "nomad") {
+          router.replace("/inventory");
+          return;
+        }
+
         if (profileData.role === "host") {
           await refreshHostData(token);
         } else if (profileData.role === "artisan") {

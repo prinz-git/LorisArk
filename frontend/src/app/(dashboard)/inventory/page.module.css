@@ -113,6 +113,7 @@
   margin: 0;
 }
 
+
 .listItem {
   display: flex;
   justify-content: space-between;
@@ -139,6 +140,20 @@
   flex-wrap: wrap;
   gap: 0.5rem;
   justify-content: flex-end;
+}
+
+.inlineExpand {
+  margin-top: 0.9rem;
+  padding-top: 0.8rem;
+  border-top: 1px solid rgba(40, 30, 93, 0.14);
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.7rem;
+  align-items: end;
+}
+
+.inlineExpand button {
+  grid-column: 1 / -1;
 }
 
 .summary {
@@ -211,6 +226,10 @@
 
   .listItem {
     flex-direction: column;
+  }
+
+  .inlineExpand {
+    grid-template-columns: 1fr;
   }
 
   .actions,

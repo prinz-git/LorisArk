@@ -18,6 +18,7 @@ from app.repositories.user_repo import UserRepository
 from app.schemas.bundling import (
     AvailabilityUpdate,
     BundleCheckoutResponse,
+    NomadBookingsResponse,
     BundlePreviewRequest,
     BundlePreviewResponse,
     CapacityUpdate,
@@ -76,6 +77,25 @@ def checkout_bundle(
 ):
     service = _service(db)
     return service.checkout_bundle(email, payload)
+
+
+@router.get("/nomad/bookings", response_model=NomadBookingsResponse)
+def list_nomad_bookings(
+    email: str = Depends(get_current_user_email),
+    db: Session = Depends(get_db_session),
+):
+    service = _service(db)
+    return service.list_nomad_bookings(email)
+
+
+@router.put("/nomad/bookings/{bundle_id}/cancel")
+def cancel_nomad_booking(
+    bundle_id: int,
+    email: str = Depends(get_current_user_email),
+    db: Session = Depends(get_db_session),
+):
+    service = _service(db)
+    return service.cancel_nomad_booking(email, bundle_id)
 
 
 @router.get("/host/roosts/{roost_id}/partnerships", response_model=list[HostPartnership])

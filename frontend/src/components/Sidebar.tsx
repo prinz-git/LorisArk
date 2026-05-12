@@ -48,9 +48,10 @@ export default function Sidebar({ isOpen = true }: SidebarProps) {
   const navItems = useMemo(() => {
     if (role === "nomad") {
       return [
-        baseNavItems[0],
-        { label: "Inventory", href: "/inventory" },
-        ...baseNavItems.slice(1),
+        { label: "Home", href: "/inventory" },
+        { label: "My Bookings", href: "/bookings" },
+        { label: "Profile", href: "/profile" },
+        { label: "Logout", href: "/logout" },
       ];
     }
     return baseNavItems;

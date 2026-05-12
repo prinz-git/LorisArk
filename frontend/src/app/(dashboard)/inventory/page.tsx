@@ -92,6 +92,47 @@ export default function InventoryPage() {
     () => rootResults.filter((root) => selectedRootIds.includes(root.id)),
     [rootResults, selectedRootIds]
   );
+  const todayIso = new Date().toISOString().split("T")[0];
+
+  const parseAvailableDays = (availableDays: string | null) => {
+    if (!availableDays) return null;
+    const map: Record<string, number> = {
+      mon: 1,
+      monday: 1,
+      tue: 2,
+      tues: 2,
+      tuesday: 2,
+      wed: 3,
+      wednesday: 3,
+      thu: 4,
+      thur: 4,
+      thurs: 4,
+      thursday: 4,
+      fri: 5,
+      friday: 5,
+      sat: 6,
+      saturday: 6,
+      sun: 0,
+      sunday: 0,
+    };
+    const days = availableDays
+      .split(",")
+      .map((token) => token.trim().toLowerCase())
+      .map((token) => map[token])
+      .filter((day) => day !== undefined);
+    return days.length ? new Set(days) : null;
+  };
+
+  const getStayWeekdays = (start: string, end: string) => {
+    const days = new Set<number>();
+    const cursor = new Date(start);
+    const target = new Date(end);
+    while (cursor < target) {
+      days.add(cursor.getDay());
+      cursor.setDate(cursor.getDate() + 1);
+    }
+    return days;
+  };
 
   useEffect(() => {
     const token = getToken();
@@ -119,6 +160,16 @@ export default function InventoryPage() {
   const validateFindInputs = () => {
     if (!dateRange.start || !dateRange.end) {
       setToast({ message: "Choose start and end dates first.", tone: "error" });
+      return false;
+    }
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const start = new Date(dateRange.start);
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(dateRange.end);
+    end.setHours(0, 0, 0, 0);
+    if (start < today || end < today) {
+      setToast({ message: "Past dates are not allowed.", tone: "error" });
       return false;
     }
     if (new Date(dateRange.end) <= new Date(dateRange.start)) {
@@ -159,7 +210,17 @@ export default function InventoryPage() {
     }
   };
 
-  const handleSelectRoost = async (roost: Roost) => {
+  const handleSelectRoost = (roost: Roost) => {
+    if (!validateFindInputs()) {
+      return;
+    }
+    setSelectedRoost(roost);
+    setRootResults([]);
+    setSelectedRootIds([]);
+    setBundlePreview(null);
+  };
+
+  const handleContinueToBuild = async () => {
     const token = getToken();
     if (!token) {
       router.replace("/login");
@@ -169,16 +230,34 @@ export default function InventoryPage() {
       return;
     }
 
+    if (!selectedRoost) {
+      setToast({ message: "Select one roost before continuing.", tone: "error" });
+      return;
+    }
+    if (!selectedRoost.place_name) {
+      setToast({ message: "Selected roost has no place name.", tone: "error" });
+      return;
+    }
+
     try {
       const params = new URLSearchParams();
-      params.set("max_walk_minutes", "15");
-      params.set("stay_start", dateRange.start);
-      params.set("stay_end", dateRange.end);
-      const roots = await apiFetch<Root[]>(
-        `/nomad/roosts/${roost.id}/roots?${params.toString()}`,
-        { token }
-      );
-      setSelectedRoost(roost);
+      params.set("page", "1");
+      params.set("limit", "50");
+      params.set("search", selectedRoost.place_name);
+      const data = await apiFetch<{ items: Root[] }>(`/roots?${params.toString()}`, {
+        token,
+      });
+      const stayWeekdays = getStayWeekdays(dateRange.start, dateRange.end);
+      const roots = (data.items || []).filter((root) => {
+        const rootPlace = (root.place_name || "").toLowerCase();
+        const selectedPlace = selectedRoost.place_name!.toLowerCase();
+        if (!rootPlace.includes(selectedPlace) && !selectedPlace.includes(rootPlace)) {
+          return false;
+        }
+        const available = parseAvailableDays(root.available_days);
+        if (!available) return true;
+        return [...stayWeekdays].some((day) => available.has(day));
+      });
       setRootResults(roots);
       setSelectedRootIds([]);
       setBundlePreview(null);
@@ -307,6 +386,7 @@ export default function InventoryPage() {
                   Start Date
                   <input
                     type="date"
+                    min={todayIso}
                     value={dateRange.start}
                     onChange={(event) =>
                       setDateRange((prev) => ({ ...prev, start: event.target.value }))
@@ -317,6 +397,7 @@ export default function InventoryPage() {
                   End Date
                   <input
                     type="date"
+                    min={dateRange.start || todayIso}
                     value={dateRange.end}
                     onChange={(event) =>
                       setDateRange((prev) => ({ ...prev, end: event.target.value }))
@@ -347,10 +428,14 @@ export default function InventoryPage() {
                         <div className={styles.actions}>
                           <button
                             type="button"
-                            className={styles.secondary}
+                            className={
+                              selectedRoost?.id === roost.id
+                                ? styles.selected
+                                : styles.secondary
+                            }
                             onClick={() => handleSelectRoost(roost)}
                           >
-                            Select
+                            {selectedRoost?.id === roost.id ? "Selected" : "Select"}
                           </button>
                           <button
                             type="button"
@@ -360,6 +445,45 @@ export default function InventoryPage() {
                             View
                           </button>
                         </div>
+                        {selectedRoost?.id === roost.id && (
+                          <div className={styles.inlineExpand}>
+                            <label className={styles.label}>
+                              Start Date
+                              <input
+                                type="date"
+                                min={todayIso}
+                                value={dateRange.start}
+                                onChange={(event) =>
+                                  setDateRange((prev) => ({
+                                    ...prev,
+                                    start: event.target.value,
+                                  }))
+                                }
+                              />
+                            </label>
+                            <label className={styles.label}>
+                              End Date
+                              <input
+                                type="date"
+                                min={dateRange.start || todayIso}
+                                value={dateRange.end}
+                                onChange={(event) =>
+                                  setDateRange((prev) => ({
+                                    ...prev,
+                                    end: event.target.value,
+                                  }))
+                                }
+                              />
+                            </label>
+                            <button
+                              type="button"
+                              className={styles.primary}
+                              onClick={handleContinueToBuild}
+                            >
+                              Continue to Build Your Stay
+                            </button>
+                          </div>
+                        )}
                       </article>
                     ))
                   )}
@@ -373,8 +497,8 @@ export default function InventoryPage() {
               <div className={styles.cardHeader}>
                 <h2>Build Your Stay</h2>
                 <p>
-                  Roots near {selectedRoost.place_name || "your selected roost"} within
-                  15-minute walk.
+                  Roots for {selectedRoost.place_name || "your selected roost"} filtered
+                  by your stay dates.
                 </p>
               </div>
 
@@ -391,8 +515,7 @@ export default function InventoryPage() {
                           <strong>{root.service_category}</strong>
                           <p>{root.service_description}</p>
                           <p>
-                            {root.place_name || "Location pending"} • {root.walk_minutes ?? "--"}
-                            min walk
+                            {root.place_name || "Location pending"} • {root.available_days || "Any day"}
                           </p>
                         </div>
                         <div className={styles.actions}>

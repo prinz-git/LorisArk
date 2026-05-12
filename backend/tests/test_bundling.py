@@ -1,6 +1,8 @@
 from datetime import date, timedelta
 import uuid
 
+from app.database import SessionLocal
+from app.models import Bundle
 
 def _auth_headers(token: str) -> dict:
     return {"Authorization": f"Bearer {token}"}
@@ -340,3 +342,144 @@ def test_capacity_override_for_specific_date(client):
         headers=_auth_headers(nomad_token),
     )
     assert first.status_code == 200
+
+
+def test_nomad_bookings_grouped_by_status_and_time(client):
+    _, host_token = _register_user(client, "host")
+    _, artisan_token = _register_user(client, "artisan")
+    _, nomad_token = _register_user(client, "nomad")
+
+    roost = _create_roost(client, host_token)
+
+    today = date.today()
+    future_start = today + timedelta(days=3)
+    future_end = today + timedelta(days=5)
+    past_start = today - timedelta(days=8)
+    past_end = today - timedelta(days=6)
+    cancelled_start = today + timedelta(days=10)
+    cancelled_end = today + timedelta(days=12)
+
+    future_root = _create_root(client, artisan_token, _weekday_label(future_start))
+    past_root = _create_root(client, artisan_token, _weekday_label(past_start))
+    cancelled_root = _create_root(client, artisan_token, _weekday_label(cancelled_start))
+
+    future_checkout = client.post(
+        "/nomad/bundles/checkout",
+        json={
+            "roost_id": roost["id"],
+            "start_date": str(future_start),
+            "end_date": str(future_end),
+            "items": [
+                {
+                    "root_id": future_root["id"],
+                    "scheduled_date": str(future_start),
+                    "quantity": 1,
+                }
+            ],
+        },
+        headers=_auth_headers(nomad_token),
+    )
+    assert future_checkout.status_code == 200
+    future_bundle_id = future_checkout.json()["bundle_id"]
+
+    past_checkout = client.post(
+        "/nomad/bundles/checkout",
+        json={
+            "roost_id": roost["id"],
+            "start_date": str(past_start),
+            "end_date": str(past_end),
+            "items": [
+                {
+                    "root_id": past_root["id"],
+                    "scheduled_date": str(past_start),
+                    "quantity": 1,
+                }
+            ],
+        },
+        headers=_auth_headers(nomad_token),
+    )
+    assert past_checkout.status_code == 200
+    past_bundle_id = past_checkout.json()["bundle_id"]
+
+    cancelled_checkout = client.post(
+        "/nomad/bundles/checkout",
+        json={
+            "roost_id": roost["id"],
+            "start_date": str(cancelled_start),
+            "end_date": str(cancelled_end),
+            "items": [
+                {
+                    "root_id": cancelled_root["id"],
+                    "scheduled_date": str(cancelled_start),
+                    "quantity": 1,
+                }
+            ],
+        },
+        headers=_auth_headers(nomad_token),
+    )
+    assert cancelled_checkout.status_code == 200
+    cancelled_bundle_id = cancelled_checkout.json()["bundle_id"]
+
+    db = SessionLocal()
+    try:
+        cancelled_bundle = db.query(Bundle).filter(Bundle.id == cancelled_bundle_id).first()
+        assert cancelled_bundle is not None
+        cancelled_bundle.status = "pending"
+        db.add(cancelled_bundle)
+        db.commit()
+    finally:
+        db.close()
+
+    bookings = client.get("/nomad/bookings", headers=_auth_headers(nomad_token))
+    assert bookings.status_code == 200
+    body = bookings.json()
+
+    upcoming_ids = {item["bundle_id"] for item in body["active_upcoming"]}
+    past_ids = {item["bundle_id"] for item in body["past_stays"]}
+    cancelled_ids = {item["bundle_id"] for item in body["cancelled_pending"]}
+
+    assert future_bundle_id in upcoming_ids
+    assert past_bundle_id in past_ids
+    assert cancelled_bundle_id in cancelled_ids
+
+
+def test_nomad_can_cancel_upcoming_booking(client):
+    _, host_token = _register_user(client, "host")
+    _, artisan_token = _register_user(client, "artisan")
+    _, nomad_token = _register_user(client, "nomad")
+
+    roost = _create_roost(client, host_token)
+    future_start = date.today() + timedelta(days=4)
+    future_end = date.today() + timedelta(days=6)
+    root = _create_root(client, artisan_token, _weekday_label(future_start))
+
+    checkout = client.post(
+        "/nomad/bundles/checkout",
+        json={
+            "roost_id": roost["id"],
+            "start_date": str(future_start),
+            "end_date": str(future_end),
+            "items": [
+                {
+                    "root_id": root["id"],
+                    "scheduled_date": str(future_start),
+                    "quantity": 1,
+                }
+            ],
+        },
+        headers=_auth_headers(nomad_token),
+    )
+    assert checkout.status_code == 200
+    bundle_id = checkout.json()["bundle_id"]
+
+    cancel = client.put(
+        f"/nomad/bookings/{bundle_id}/cancel",
+        headers=_auth_headers(nomad_token),
+    )
+    assert cancel.status_code == 200
+    assert cancel.json()["status"] == "cancelled"
+
+    bookings = client.get("/nomad/bookings", headers=_auth_headers(nomad_token))
+    assert bookings.status_code == 200
+    cancelled_ids = {item["bundle_id"] for item in bookings.json()["cancelled_pending"]}
+    assert bundle_id in cancelled_ids

@@ -463,6 +463,80 @@ class BundlingService:
             )
         return enriched
 
+    def list_nomad_bookings(self, email: str) -> dict:
+        nomad = self._require_nomad(email)
+        bundles = self.bundle_repo.list_by_nomad(nomad.id)
+        if not bundles:
+            return {
+                "active_upcoming": [],
+                "past_stays": [],
+                "cancelled_pending": [],
+            }
+
+        roost_ids = list({bundle.roost_id for bundle in bundles})
+        roosts_by_id = {
+            roost.id: roost for roost in self.roost_repo.list_all() if roost.id in roost_ids
+        }
+        bundle_ids = [bundle.id for bundle in bundles]
+        bundle_items = self.bundle_item_repo.list_by_bundles(bundle_ids)
+        root_ids = list({item.root_id for item in bundle_items})
+        roots_by_id = {
+            root.id: root for root in self.root_repo.list_all() if root.id in root_ids
+        }
+        services_by_bundle: dict[int, list[str]] = {}
+        for item in bundle_items:
+            root = roots_by_id.get(item.root_id)
+            if not root:
+                continue
+            services_by_bundle.setdefault(item.bundle_id, []).append(
+                root.service_description
+            )
+
+        today = date.today()
+        active_upcoming = []
+        past_stays = []
+        cancelled_pending = []
+
+        for bundle in bundles:
+            roost = roosts_by_id.get(bundle.roost_id)
+            booking = {
+                "bundle_id": bundle.id,
+                "roost_id": bundle.roost_id,
+                "roost_title": roost.title if roost else None,
+                "roost_place_name": roost.place_name if roost else None,
+                "start_date": bundle.start_date,
+                "end_date": bundle.end_date,
+                "total_price": bundle.total_price,
+                "status": bundle.status,
+                "services": services_by_bundle.get(bundle.id, []),
+            }
+            status = (bundle.status or "").lower()
+            if status in {"cancelled", "canceled", "pending"}:
+                cancelled_pending.append(booking)
+            elif bundle.end_date < today:
+                past_stays.append(booking)
+            else:
+                active_upcoming.append(booking)
+
+        return {
+            "active_upcoming": active_upcoming,
+            "past_stays": past_stays,
+            "cancelled_pending": cancelled_pending,
+        }
+
+    def cancel_nomad_booking(self, email: str, bundle_id: int) -> dict:
+        nomad = self._require_nomad(email)
+        bundle = self.bundle_repo.get_by_id(bundle_id)
+        if not bundle or bundle.nomad_id != nomad.id:
+            raise HTTPException(status_code=404, detail="Booking not found")
+        if bundle.status and bundle.status.lower() in {"cancelled", "canceled"}:
+            return {"bundle_id": bundle.id, "status": bundle.status}
+        if bundle.end_date < date.today():
+            raise HTTPException(status_code=400, detail="Past bookings cannot be cancelled")
+        bundle.status = "cancelled"
+        updated = self.bundle_repo.update(bundle)
+        return {"bundle_id": updated.id, "status": updated.status}
+
     def _validate_items(
         self,
         items: list[BundleItemRequest],
