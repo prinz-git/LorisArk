@@ -58,7 +58,7 @@ is `frontend/src/lib/testids.ts`.
 - `dashboard-update-profile-link`
 - `dashboard-toast`
 
-**Users List (`/users`)**
+**Member Directory (`/users`)**
 - `users-page`
 - `users-header`
 - `users-eyebrow`
@@ -68,7 +68,7 @@ is `frontend/src/lib/testids.ts`.
 - `users-row-header`
 - `users-toast`
 
-Row-level dynamic IDs for each user:
+Row-level dynamic IDs for each member:
 - `users-row-${userId}`
 - `users-row-${userId}-id`
 - `users-row-${userId}-name`
@@ -77,7 +77,7 @@ Row-level dynamic IDs for each user:
 - `users-edit-link-${userId}`
 - `users-delete-button-${userId}`
 
-**Edit User (`/users/[id]`)**
+**Edit Member (`/users/[id]`)**
 - `edit-user-page`
 - `edit-user-card`
 - `edit-user-title`

@@ -359,8 +359,7 @@ export default function InventoryPage() {
   return (
     <div className={styles.page} data-testid={testIds.inventory.page}>
       <header className={styles.header} data-testid={testIds.inventory.header}>
-        <h1>Intelligent Booking</h1>
-        <p>Find - Select - Bundle - Book</p>
+        <h1>Find - Select - Bundle - Book</h1>
       </header>
 
       {profile ? (
