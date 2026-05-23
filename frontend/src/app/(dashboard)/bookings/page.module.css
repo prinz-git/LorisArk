@@ -116,7 +116,8 @@
 
 .markerActive,
 .markerPast,
-.markerPending {
+.markerPending,
+.markerWorkshop {
   width: 8px;
   height: 8px;
   border-radius: 50%;
@@ -135,6 +136,16 @@
 
 .markerPending {
   background: #ca8a04;
+}
+
+.markerWorkshop {
+  background: #7c3aed;
+}
+
+.ledger {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.8rem;
 }
 
 .item {
@@ -233,6 +244,38 @@
   margin-bottom: 0.3rem;
 }
 
+.trustGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+  margin-top: 0.4rem;
+}
+
+.trustGrid span {
+  border: 1px solid rgba(40, 30, 93, 0.12);
+  border-radius: 0.55rem;
+  padding: 0.55rem;
+  color: var(--color-indigo);
+  font-size: 0.88rem;
+  font-weight: 650;
+}
+
+.trustGrid strong {
+  display: block;
+  font-size: 1.2rem;
+}
+
+.workflow {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0.4rem 0 0;
+  padding-left: 1.2rem;
+}
+
+.workflow li {
+  color: var(--color-muted);
+}
+
 .modalActions {
   display: flex;
   gap: 0.6rem;
@@ -256,6 +299,34 @@
 
 @media (max-width: 1000px) {
   .columns {
+    grid-template-columns: 1fr;
+  }
+
+  .ledger {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .cardHeader {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .calendarCell {
+    min-height: 58px;
+  }
+
+  .monthNav {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .monthNav p {
+    min-width: 120px;
+  }
+
+  .trustGrid {
     grid-template-columns: 1fr;
   }
 }

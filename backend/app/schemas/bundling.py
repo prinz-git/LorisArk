@@ -93,6 +93,7 @@ class HostStaySummaryItem(BaseModel):
     roost_title: str | None = None
     start_date: dt_date
     end_date: dt_date
+    status: str
     services: list[str]
 
 
@@ -112,6 +113,16 @@ class AvailabilityUpdate(BaseModel):
     service_window_end: str | None = None
 
 
+class BookingDecisionRequest(BaseModel):
+    reason: str | None = None
+
+
+class BookingDecisionResponse(BaseModel):
+    id: int
+    status: str
+    reason: str | None = None
+
+
 class ServiceTicketResponse(BaseModel):
     id: int
     bundle_id: int
@@ -120,6 +131,9 @@ class ServiceTicketResponse(BaseModel):
     host_id: int
     status: str
     note: str | None
+    host_status: str | None = None
+    host_name: str | None = None
+    host_confirmation_message: str | None = None
     service_name: str | None = None
     service_category: str | None = None
     roost_name: str | None = None

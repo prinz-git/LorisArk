@@ -44,6 +44,28 @@ def ensure_bundling_schema(engine: Engine) -> None:
         if name not in tables:
             creator(engine)
 
+    inspector = inspect(engine)
+    if "bundles" in inspector.get_table_names():
+        _ensure_status_column(engine, inspector, "bundles", "pending_host")
+    if "service_tickets" in inspector.get_table_names():
+        _ensure_status_column(engine, inspector, "service_tickets", "pending_host")
+
+
+def _ensure_status_column(
+    engine: Engine, inspector, table_name: str, default_status: str
+) -> None:
+    columns = {column["name"] for column in inspector.get_columns(table_name)}
+    with engine.begin() as connection:
+        if "status" not in columns:
+            connection.execute(text(f"ALTER TABLE {table_name} ADD COLUMN status VARCHAR"))
+        connection.execute(
+            text(
+                f"UPDATE {table_name} SET status = :status "
+                "WHERE status IS NULL OR status = ''"
+            ),
+            {"status": default_status},
+        )
+
 
 def _ensure_inventory_table(engine: Engine, inspector, table_name: str) -> None:
     columns = {column["name"]: column for column in inspector.get_columns(table_name)}

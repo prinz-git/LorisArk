@@ -254,7 +254,7 @@ class BundlingService:
             start_date=payload.start_date,
             end_date=payload.end_date,
             total_price=total,
-            status="paid",
+            status="pending_host",
         )
         bundle = self.bundle_repo.create(bundle)
 
@@ -277,7 +277,7 @@ class BundlingService:
                     root_id=line.root.id,
                     nomad_id=user.id,
                     host_id=roost.provider_id,
-                    status="new",
+                    status="pending_host",
                     note=(
                         f"Guest {user.full_name or user.email} booked "
                         f"{line.root.service_category} at {roost.place_name or 'host location'}"
@@ -362,10 +362,56 @@ class BundlingService:
                     ),
                     "start_date": bundle.start_date,
                     "end_date": bundle.end_date,
+                    "status": bundle.status,
                     "services": services,
                 }
             )
         return summaries
+
+    def accept_host_booking(self, email: str, bundle_id: int) -> dict:
+        host = self._require_host(email)
+        bundle = self.bundle_repo.get_by_id(bundle_id)
+        if not bundle:
+            raise HTTPException(status_code=404, detail="Booking not found")
+        roost = self.roost_repo.get_by_id(bundle.roost_id)
+        if not roost or roost.provider_id != host.id:
+            raise HTTPException(status_code=404, detail="Booking not found")
+        if (bundle.status or "").lower() in {"cancelled", "canceled", "host_declined"}:
+            raise HTTPException(status_code=400, detail="Booking cannot be accepted")
+
+        bundle.status = "host_accepted"
+        updated = self.bundle_repo.update(bundle)
+        tickets = self.ticket_repo.list_by_provider(
+            [item.root_id for item in self.bundle_item_repo.list_by_bundle(bundle.id)]
+        )
+        for ticket in tickets:
+            if ticket.bundle_id == bundle.id and ticket.status == "pending_host":
+                ticket.status = "pending_artisan"
+                self.ticket_repo.update(ticket)
+        return {"id": updated.id, "status": updated.status, "reason": None}
+
+    def decline_host_booking(self, email: str, bundle_id: int, reason: str | None = None) -> dict:
+        host = self._require_host(email)
+        bundle = self.bundle_repo.get_by_id(bundle_id)
+        if not bundle:
+            raise HTTPException(status_code=404, detail="Booking not found")
+        roost = self.roost_repo.get_by_id(bundle.roost_id)
+        if not roost or roost.provider_id != host.id:
+            raise HTTPException(status_code=404, detail="Booking not found")
+        if (bundle.status or "").lower() in {"cancelled", "canceled"}:
+            raise HTTPException(status_code=400, detail="Booking cannot be declined")
+
+        bundle.status = "host_declined"
+        updated = self.bundle_repo.update(bundle)
+        tickets = self.ticket_repo.list_by_provider(
+            [item.root_id for item in self.bundle_item_repo.list_by_bundle(bundle.id)]
+        )
+        for ticket in tickets:
+            if ticket.bundle_id == bundle.id:
+                ticket.status = "host_declined"
+                ticket.note = reason or ticket.note
+                self.ticket_repo.update(ticket)
+        return {"id": updated.id, "status": updated.status, "reason": reason}
 
     def update_wifi_status(self, email: str, roost_id: int, wifi_active: bool) -> dict:
         host = self._require_host(email)
@@ -426,6 +472,11 @@ class BundlingService:
         bundle_ids = list({ticket.bundle_id for ticket in tickets})
         bundles = self.bundle_repo.list_by_ids(bundle_ids)
         bundles_by_id = {bundle.id: bundle for bundle in bundles}
+        visible_bundle_ids = {
+            bundle.id
+            for bundle in bundles
+            if (bundle.status or "").lower() not in {"host_declined", "cancelled", "canceled"}
+        }
         roost_ids = list({bundle.roost_id for bundle in bundles})
         roosts_by_id = {
             roost.id: roost for roost in self.roost_repo.list_all() if roost.id in roost_ids
@@ -439,9 +490,20 @@ class BundlingService:
 
         enriched = []
         for ticket in tickets:
+            if ticket.bundle_id not in visible_bundle_ids:
+                continue
             root = roots_by_id.get(ticket.root_id)
             bundle = bundles_by_id.get(ticket.bundle_id)
             roost = roosts_by_id.get(bundle.roost_id) if bundle else None
+            host = self.user_repo.get_by_id(ticket.host_id)
+            host_status = bundle.status if bundle else None
+            ticket_status = ticket.status
+            host_confirmation_message = None
+            if host_status == "pending_host":
+                ticket_status = "pending_host"
+                host_confirmation_message = (
+                    f"Pending confirmation from host {host.full_name if host else ticket.host_id}"
+                )
             enriched.append(
                 {
                     "id": ticket.id,
@@ -449,8 +511,11 @@ class BundlingService:
                     "root_id": ticket.root_id,
                     "nomad_id": ticket.nomad_id,
                     "host_id": ticket.host_id,
-                    "status": ticket.status,
+                    "status": ticket_status,
                     "note": ticket.note,
+                    "host_status": host_status,
+                    "host_name": host.full_name if host else None,
+                    "host_confirmation_message": host_confirmation_message,
                     "service_name": root.service_description if root else None,
                     "service_category": root.service_category if root else None,
                     "roost_name": roost.title if roost else None,
@@ -462,6 +527,53 @@ class BundlingService:
                 }
             )
         return enriched
+
+    def accept_artisan_ticket(self, email: str, ticket_id: int) -> dict:
+        artisan = self._require_artisan(email)
+        ticket = self.ticket_repo.get_by_id(ticket_id)
+        if not ticket:
+            raise HTTPException(status_code=404, detail="Ticket not found")
+        root = self.root_repo.get_by_id(ticket.root_id)
+        if not root or root.provider_id != artisan.id:
+            raise HTTPException(status_code=404, detail="Ticket not found")
+        bundle = self.bundle_repo.get_by_id(ticket.bundle_id)
+        if not bundle or bundle.status != "host_accepted":
+            host = self.user_repo.get_by_id(ticket.host_id)
+            host_name = host.full_name if host else str(ticket.host_id)
+            raise HTTPException(
+                status_code=409,
+                detail=f"Pending confirmation from host {host_name}",
+            )
+        if ticket.status == "host_declined":
+            raise HTTPException(status_code=404, detail="Ticket not found")
+        ticket.status = "artisan_accepted"
+        updated = self.ticket_repo.update(ticket)
+        return {"id": updated.id, "status": updated.status, "reason": None}
+
+    def decline_artisan_ticket(
+        self, email: str, ticket_id: int, reason: str | None = None
+    ) -> dict:
+        artisan = self._require_artisan(email)
+        ticket = self.ticket_repo.get_by_id(ticket_id)
+        if not ticket:
+            raise HTTPException(status_code=404, detail="Ticket not found")
+        root = self.root_repo.get_by_id(ticket.root_id)
+        if not root or root.provider_id != artisan.id:
+            raise HTTPException(status_code=404, detail="Ticket not found")
+        bundle = self.bundle_repo.get_by_id(ticket.bundle_id)
+        if not bundle or bundle.status != "host_accepted":
+            host = self.user_repo.get_by_id(ticket.host_id)
+            host_name = host.full_name if host else str(ticket.host_id)
+            raise HTTPException(
+                status_code=409,
+                detail=f"Pending confirmation from host {host_name}",
+            )
+        if ticket.status == "host_declined":
+            raise HTTPException(status_code=404, detail="Ticket not found")
+        ticket.status = "artisan_declined"
+        ticket.note = reason or ticket.note
+        updated = self.ticket_repo.update(ticket)
+        return {"id": updated.id, "status": updated.status, "reason": reason}
 
     def list_nomad_bookings(self, email: str) -> dict:
         nomad = self._require_nomad(email)

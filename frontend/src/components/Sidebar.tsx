@@ -54,6 +54,24 @@ export default function Sidebar({ isOpen = true }: SidebarProps) {
         { label: "Logout", href: "/logout" },
       ];
     }
+    if (role === "host") {
+      return [
+        { label: "Dashboard", href: "/dashboard" },
+        { label: "My Roosts", href: "/roosts" },
+        { label: "Profile", href: "/profile" },
+        { label: "Users", href: "/users" },
+        { label: "Logout", href: "/logout" },
+      ];
+    }
+    if (role === "artisan") {
+      return [
+        { label: "Dashboard", href: "/dashboard" },
+        { label: "My Roots", href: "/roots" },
+        { label: "Profile", href: "/profile" },
+        { label: "Users", href: "/users" },
+        { label: "Logout", href: "/logout" },
+      ];
+    }
     return baseNavItems;
   }, [role]);
 

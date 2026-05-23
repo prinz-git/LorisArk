@@ -83,6 +83,15 @@ class ServiceTicketRepository:
             .all()
         )
 
+    def get_by_id(self, ticket_id: int) -> ServiceTicket | None:
+        return self.db.query(ServiceTicket).filter(ServiceTicket.id == ticket_id).first()
+
+    def update(self, ticket: ServiceTicket) -> ServiceTicket:
+        self.db.add(ticket)
+        self.db.commit()
+        self.db.refresh(ticket)
+        return ticket
+
 
 class RootDailyCapacityRepository:
     def __init__(self, db: Session):

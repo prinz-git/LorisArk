@@ -17,6 +17,8 @@ from app.repositories.root_repo import RootRepository
 from app.repositories.user_repo import UserRepository
 from app.schemas.bundling import (
     AvailabilityUpdate,
+    BookingDecisionRequest,
+    BookingDecisionResponse,
     BundleCheckoutResponse,
     NomadBookingsResponse,
     BundlePreviewRequest,
@@ -117,6 +119,27 @@ def host_stay_summaries(
     return service.host_stay_summaries(email)
 
 
+@router.put("/host/bookings/{bundle_id}/accept", response_model=BookingDecisionResponse)
+def accept_host_booking(
+    bundle_id: int,
+    email: str = Depends(get_current_user_email),
+    db: Session = Depends(get_db_session),
+):
+    service = _service(db)
+    return service.accept_host_booking(email, bundle_id)
+
+
+@router.put("/host/bookings/{bundle_id}/decline", response_model=BookingDecisionResponse)
+def decline_host_booking(
+    bundle_id: int,
+    payload: BookingDecisionRequest | None = None,
+    email: str = Depends(get_current_user_email),
+    db: Session = Depends(get_db_session),
+):
+    service = _service(db)
+    return service.decline_host_booking(email, bundle_id, payload.reason if payload else None)
+
+
 @router.put("/host/roosts/{roost_id}/wifi-status")
 def update_wifi_status(
     roost_id: int,
@@ -163,3 +186,24 @@ def list_tickets(
 ):
     service = _service(db)
     return service.list_tickets(email)
+
+
+@router.put("/artisan/tickets/{ticket_id}/accept", response_model=BookingDecisionResponse)
+def accept_artisan_ticket(
+    ticket_id: int,
+    email: str = Depends(get_current_user_email),
+    db: Session = Depends(get_db_session),
+):
+    service = _service(db)
+    return service.accept_artisan_ticket(email, ticket_id)
+
+
+@router.put("/artisan/tickets/{ticket_id}/decline", response_model=BookingDecisionResponse)
+def decline_artisan_ticket(
+    ticket_id: int,
+    payload: BookingDecisionRequest | None = None,
+    email: str = Depends(get_current_user_email),
+    db: Session = Depends(get_db_session),
+):
+    service = _service(db)
+    return service.decline_artisan_ticket(email, ticket_id, payload.reason if payload else None)

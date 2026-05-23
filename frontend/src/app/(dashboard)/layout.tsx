@@ -22,6 +22,8 @@ export default function DashboardLayout({
   const pageTitle = (() => {
     if (pathname.startsWith("/inventory")) return "Home";
     if (pathname.startsWith("/bookings")) return "My Bookings";
+    if (pathname.startsWith("/roosts")) return "My Roosts";
+    if (pathname.startsWith("/roots")) return "My Roots";
     if (pathname.startsWith("/profile")) return "Profile";
     if (pathname.startsWith("/users")) return "Users";
     if (pathname.startsWith("/logout")) return "Logout";
