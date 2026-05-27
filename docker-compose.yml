@@ -8,7 +8,7 @@ services:
     environment:
       APP_ENV: ${APP_ENV:-local}
       SECRET_KEY: ${SECRET_KEY:-change-me}
-      DATABASE_URL: ${DATABASE_URL:-sqlite:////app/data/users.db}
+      DATABASE_URL: ${DATABASE_URL:-sqlite:////app/data/lorisark.db}
       ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:3000,http://127.0.0.1:3000,http://192.168.0.35:3000}
     volumes:
       - ./data:/app/data
@@ -40,7 +40,7 @@ services:
     environment:
       APP_ENV: ${APP_ENV:-prod}
       SECRET_KEY: ${SECRET_KEY:-change-me}
-      DATABASE_URL: ${DATABASE_URL:-sqlite:////app/data/users.db}
+      DATABASE_URL: ${DATABASE_URL:-sqlite:////app/data/lorisark.db}
       WEB_CONCURRENCY: "2"
       ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:3000,http://127.0.0.1:3000,http://192.168.0.35:3000}
     volumes:

@@ -101,7 +101,7 @@ Environment variables:
 - `APP_ENV`: `local` | `test` | `prod` (defaults to `local`)
 - `APP_NAME`: API title shown in OpenAPI docs (defaults to `LorisArk API`)
 - `SECRET_KEY`: required in non-local environments
-- `DATABASE_URL`: default `sqlite:///./users.db`
+- `DATABASE_URL`: default `sqlite:///./lorisark.db`
 - `ALLOWED_ORIGINS`: comma-separated CORS origins
 - `ACCESS_TOKEN_EXPIRE_MINUTES`: default `60`
 - `NEXT_PUBLIC_API_BASE_URL`: frontend API base URL

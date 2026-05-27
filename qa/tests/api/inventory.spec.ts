@@ -3,6 +3,7 @@ import { expectStatus } from "../../core/assertions";
 import { AuthAPI } from "../../api/AuthAPI";
 import { APIClient } from "../../core/APIClient";
 import { createUser, User } from "../../data/userFactory";
+import { cleanupUser } from "../../data/userCleanup";
 import { InventoryAPI } from "../../api/InventoryAPI";
 import { APIRequestContext } from "@playwright/test";
 
@@ -29,12 +30,10 @@ async function cleanupAuthedContext(context?: AuthedContext) {
   if (!context) {
     return;
   }
+  await cleanupUser(context.user);
   try {
-    await context.api.delete("/profile");
-  } catch {
-    // Best-effort cleanup; ignore failures.
-  }
-  await context.api.dispose();
+    await context.api.dispose();
+  } catch {}
 }
 
 test("Host can manage roosts", async ({ auth }) => {

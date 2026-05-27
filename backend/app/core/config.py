@@ -7,7 +7,7 @@ class Settings:
     def __init__(self) -> None:
         self.APP_NAME = os.getenv("APP_NAME", "LorisArk API")
         self.ENV = os.getenv("APP_ENV", "local")
-        self.DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./users.db")
+        self.DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./lorisark.db")
         self.ALGORITHM = os.getenv("ALGORITHM", "HS256")
         self.ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "60"))
         origins = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000")

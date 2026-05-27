@@ -7,7 +7,7 @@ from sqlalchemy.orm import sessionmaker
 
 os.environ.setdefault("APP_ENV", "test")
 os.environ.setdefault("SECRET_KEY", "test-secret-key")
-os.environ.setdefault("DATABASE_URL", "sqlite:///./test_users.db")
+os.environ.setdefault("DATABASE_URL", "sqlite:///./test_lorisark.db")
 
 from app.main import app
 from app.database import Base, get_db
