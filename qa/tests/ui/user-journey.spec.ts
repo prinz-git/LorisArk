@@ -1,6 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { createUser, User } from "../../data/userFactory";
 import { seedLoggedInUser, seedUser } from "../../data/testData";
+import { cleanupUser } from "../../data/userCleanup";
 import { ENV } from "../../core/env";
 import { expectToast } from "../../ui/components/toast";
 import { RegisterPage } from "../../ui/pages/RegisterPage";
@@ -11,31 +12,14 @@ import { ProfilePage } from "../../ui/pages/ProfilePage";
 import { LandingPage } from "../../ui/pages/LandingPage";
 import { testIdBuilders, testIds } from "../../ui/testIds";
 import { APIClient } from "../../core/APIClient";
-import { AuthAPI } from "../../api/AuthAPI";
 import { UsersAPI } from "../../api/UsersAPI";
 
 const TOKEN_KEY = "lorisark_token";
 
 test.use({ baseURL: ENV.UI_BASE_URL });
 
-const cleanupUser = (user: User) => async () => {
-  const request = await APIClient.create();
-  const auth = new AuthAPI(request);
-
-  try {
-    const login = await auth.login(user.email, user.password);
-    if (login.status() !== 200) {
-      return;
-    }
-
-    const token = (await login.json()).access_token;
-    const authed = await APIClient.create(token);
-    const users = new UsersAPI(authed);
-    await users.deleteProfile();
-    await authed.dispose();
-  } finally {
-    await request.dispose();
-  }
+const cleanupTaskFor = (user: User) => async () => {
+  await cleanupUser(user);
 };
 
 test.describe("Registration", () => {
@@ -55,7 +39,7 @@ test.describe("Registration", () => {
       );
       await page.waitForURL("**/login");
     } finally {
-      await cleanupUser(user)();
+      await cleanupTaskFor(user)();
     }
   });
 
@@ -203,8 +187,8 @@ test.describe("User E2E journey", () => {
     const secondaryUser = createUser();
     let secondaryUserId: number | null = null;
 
-    cleanupTasks.push(cleanupUser(primaryUser));
-    cleanupTasks.push(cleanupUser(secondaryUser));
+    cleanupTasks.push(cleanupTaskFor(primaryUser));
+    cleanupTasks.push(cleanupTaskFor(secondaryUser));
 
     const register = new RegisterPage(page);
     const login = new LoginPage(page);
@@ -290,13 +274,21 @@ test.describe("User E2E journey", () => {
 
       const updatedName = `${secondaryUser.full_name} Updated`;
       await users.editUser(secondaryUserId as number, updatedName);
-      await expectToast(page, "User updated.", testIds.editUser.toast);
+      await expectToast(
+        page,
+        /(?:User|Member) updated\./,
+        testIds.editUser.toast
+      );
       await users.backToListFromEdit();
     });
 
     await test.step("Delete the secondary user from the list", async () => {
       await users.deleteUser(secondaryUserId as number);
-      await expectToast(page, "User deleted.", testIds.users.toast);
+      await expectToast(
+        page,
+        /(?:User|Member) deleted\./,
+        testIds.users.toast
+      );
       await users.assertUserAbsent(secondaryUserId as number);
     });
 

@@ -2,6 +2,7 @@ import { test as base } from "@playwright/test";
 import { APIClient } from "../core/APIClient";
 import { AuthAPI } from "../api/AuthAPI";
 import { createUser } from "../data/userFactory";
+import { cleanupUser } from "../data/userCleanup";
 import { expectStatus } from "../core/assertions";
 
 type AuthFixture = {
@@ -12,10 +13,9 @@ export const test = base.extend<AuthFixture>({
   token: async ({}, use) => {
     const request = await APIClient.create();
     const auth = new AuthAPI(request);
+    const user = createUser();
 
     try {
-      const user = createUser();
-
       const register = await auth.register(user);
       expectStatus(register, 200);
 
@@ -26,6 +26,7 @@ export const test = base.extend<AuthFixture>({
       await use(token);
     } finally {
       await request.dispose();
+      await cleanupUser(user);
     }
   },
 });

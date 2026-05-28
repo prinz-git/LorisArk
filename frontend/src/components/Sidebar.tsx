@@ -2,15 +2,22 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
 import { usePathname } from "next/navigation";
+import { apiFetch } from "@/lib/api";
+import { getToken } from "@/lib/auth";
 import styles from "./Sidebar.module.css";
 
-const navItems = [
+const baseNavItems = [
   { label: "Dashboard", href: "/dashboard" },
   { label: "Profile", href: "/profile" },
   { label: "Users", href: "/users" },
   { label: "Logout", href: "/logout" },
 ];
+
+type Profile = {
+  role: "nomad" | "host" | "artisan";
+};
 
 type SidebarProps = {
   isOpen?: boolean;
@@ -18,6 +25,55 @@ type SidebarProps = {
 
 export default function Sidebar({ isOpen = true }: SidebarProps) {
   const pathname = usePathname();
+  const [role, setRole] = useState<Profile["role"] | null>(null);
+
+  useEffect(() => {
+    const token = getToken();
+    if (!token) {
+      return;
+    }
+
+    const load = async () => {
+      try {
+        const profile = await apiFetch<Profile>("/profile", { token });
+        setRole(profile.role);
+      } catch {
+        setRole(null);
+      }
+    };
+
+    load();
+  }, []);
+
+  const navItems = useMemo(() => {
+    if (role === "nomad") {
+      return [
+        { label: "Home", href: "/inventory" },
+        { label: "My Bookings", href: "/bookings" },
+        { label: "Profile", href: "/profile" },
+        { label: "Logout", href: "/logout" },
+      ];
+    }
+    if (role === "host") {
+      return [
+        { label: "Dashboard", href: "/dashboard" },
+        { label: "My Roosts", href: "/roosts" },
+        { label: "Profile", href: "/profile" },
+        { label: "Users", href: "/users" },
+        { label: "Logout", href: "/logout" },
+      ];
+    }
+    if (role === "artisan") {
+      return [
+        { label: "Dashboard", href: "/dashboard" },
+        { label: "My Roots", href: "/roots" },
+        { label: "Profile", href: "/profile" },
+        { label: "Users", href: "/users" },
+        { label: "Logout", href: "/logout" },
+      ];
+    }
+    return baseNavItems;
+  }, [role]);
 
   return (
     <aside

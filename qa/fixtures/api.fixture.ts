@@ -4,6 +4,7 @@ import { APIClient } from "../core/APIClient";
 import { AuthAPI } from "../api/AuthAPI";
 import { UsersAPI } from "../api/UsersAPI";
 import { createUser, User } from "../data/userFactory";
+import { cleanupUser } from "../data/userCleanup";
 import { expectStatus } from "../core/assertions";
 
 type ApiFixture = {
@@ -31,7 +32,11 @@ export const test = base.extend<ApiFixture>({
     const user = createUser();
     const register = await auth.register(user);
     expectStatus(register, 200);
-    await use(user);
+    try {
+      await use(user);
+    } finally {
+      await cleanupUser(user);
+    }
   },
   token: async ({ auth, user }, use) => {
     const login = await auth.login(user.email, user.password);

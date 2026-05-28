@@ -93,6 +93,38 @@
   font-size: 0.7rem;
 }
 
+.calendarLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  border: 1px solid rgba(40, 30, 93, 0.16);
+  border-radius: 999px;
+  padding: 0.4rem 0.75rem;
+  background: #fff;
+  color: var(--color-indigo);
+}
+
+.calendarIcon {
+  line-height: 1;
+}
+
+.calendarLabel {
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.calendarBadge {
+  min-width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  background: var(--color-sky);
+  color: var(--color-indigo);
+  display: grid;
+  place-items: center;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
 .scrim {
   position: fixed;
   inset: 0;

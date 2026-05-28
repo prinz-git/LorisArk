@@ -21,6 +21,7 @@ export const testIds = {
   },
   dashboard: {
     greeting: "dashboard-greeting",
+    toast: "dashboard-toast",
   },
   users: {
     title: "users-title",
@@ -40,6 +41,20 @@ export const testIds = {
     saveButton: "profile-save-button",
     deleteButton: "profile-delete-button",
     toast: "profile-toast",
+  },
+  inventory: {
+    page: "inventory-page",
+    header: "inventory-header",
+    profileBadge: "inventory-profile-badge",
+    roostCard: "inventory-roost-card",
+    roostForm: "inventory-roost-form",
+    roostSubmit: "inventory-roost-submit",
+    rootsCard: "inventory-roots-card",
+    rootsForm: "inventory-roots-form",
+    rootsSubmit: "inventory-roots-submit",
+    roostList: "inventory-roost-list",
+    rootList: "inventory-root-list",
+    toast: "inventory-toast",
   },
 } as const;
 
