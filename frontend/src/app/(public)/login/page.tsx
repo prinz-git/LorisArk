@@ -26,6 +26,16 @@ export default function LoginPage() {
         body: JSON.stringify({ email, password }),
       });
       setToken(data.access_token);
+      const profile = await apiFetch<{ role: "nomad" | "host" | "artisan" }>(
+        "/profile",
+        {
+          token: data.access_token,
+        }
+      );
+      if (profile.role === "nomad") {
+        router.push("/inventory");
+        return;
+      }
       router.push("/dashboard");
     } catch (error) {
       setToast({ message: (error as Error).message, tone: "error" });

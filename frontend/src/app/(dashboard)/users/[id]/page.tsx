@@ -58,7 +58,7 @@ export default function EditUserPage() {
         token,
         headers: {},
       });
-      setToast({ message: "User updated." });
+      setToast({ message: "Member updated." });
     } catch (error) {
       setToast({ message: (error as Error).message, tone: "error" });
     }
@@ -67,8 +67,8 @@ export default function EditUserPage() {
   return (
     <div className={styles.page} data-testid={testIds.editUser.page}>
       <div className={styles.card} data-testid={testIds.editUser.card}>
-        <h1 data-testid={testIds.editUser.title}>Edit User</h1>
-        <p className={styles.subtitle}>Update user details with admin access.</p>
+        <h1 data-testid={testIds.editUser.title}>Edit Member</h1>
+        <p className={styles.subtitle}>Update member details with community access.</p>
         <form
           className={styles.form}
           data-testid={testIds.editUser.form}

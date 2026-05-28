@@ -48,9 +48,28 @@ export default function Sidebar({ isOpen = true }: SidebarProps) {
   const navItems = useMemo(() => {
     if (role === "nomad") {
       return [
-        baseNavItems[0],
-        { label: "Inventory", href: "/inventory" },
-        ...baseNavItems.slice(1),
+        { label: "Home", href: "/inventory" },
+        { label: "My Bookings", href: "/bookings" },
+        { label: "Profile", href: "/profile" },
+        { label: "Logout", href: "/logout" },
+      ];
+    }
+    if (role === "host") {
+      return [
+        { label: "Dashboard", href: "/dashboard" },
+        { label: "My Roosts", href: "/roosts" },
+        { label: "Profile", href: "/profile" },
+        { label: "Users", href: "/users" },
+        { label: "Logout", href: "/logout" },
+      ];
+    }
+    if (role === "artisan") {
+      return [
+        { label: "Dashboard", href: "/dashboard" },
+        { label: "My Roots", href: "/roots" },
+        { label: "Profile", href: "/profile" },
+        { label: "Users", href: "/users" },
+        { label: "Logout", href: "/logout" },
       ];
     }
     return baseNavItems;
