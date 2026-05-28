@@ -3,7 +3,7 @@ services:
     environment:
       APP_ENV: "test"
       SECRET_KEY: "ci-secret"
-      DATABASE_URL: "sqlite:////tmp/users.db"
+      DATABASE_URL: "sqlite:////tmp/test_lorisark.db"
 
   frontend:
     environment:

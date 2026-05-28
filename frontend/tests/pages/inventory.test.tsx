@@ -52,7 +52,7 @@ describe("InventoryPage", () => {
 
     render(<InventoryPage />);
 
-    await screen.findByText(/intelligent booking/i);
+    await screen.findByText(/Find - Select - Bundle - Book/i);
     expect(replace).toHaveBeenCalledWith("/dashboard");
   });
 });

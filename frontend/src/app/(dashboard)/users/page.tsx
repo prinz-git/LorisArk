@@ -57,13 +57,13 @@ export default function UsersPage() {
       router.replace("/login");
       return;
     }
-    if (!confirm("Delete this user?")) {
+    if (!confirm("Delete this member?")) {
       return;
     }
     try {
       await apiFetch(`/users/${id}`, { method: "DELETE", token });
       setUsers((prev) => prev.filter((user) => user.id !== id));
-      setToast({ message: "User deleted." });
+      setToast({ message: "Member deleted." });
     } catch (error) {
       setToast({ message: (error as Error).message, tone: "error" });
     }
@@ -74,14 +74,14 @@ export default function UsersPage() {
       <header className={styles.header} data-testid={testIds.users.header}>
         <div>
           <p className={styles.eyebrow} data-testid={testIds.users.eyebrow}>
-            Users
+            Community
           </p>
-          <h1 data-testid={testIds.users.title}>User Listing</h1>
+          <h1 data-testid={testIds.users.title}>Member Directory</h1>
         </div>
         <input
           className={styles.search}
           type="search"
-          placeholder="Search users"
+          placeholder="Search members"
           data-testid={testIds.users.searchInput}
           value={search}
           onChange={(event) => setSearch(event.target.value)}

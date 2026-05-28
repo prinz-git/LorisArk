@@ -274,13 +274,21 @@ test.describe("User E2E journey", () => {
 
       const updatedName = `${secondaryUser.full_name} Updated`;
       await users.editUser(secondaryUserId as number, updatedName);
-      await expectToast(page, "User updated.", testIds.editUser.toast);
+      await expectToast(
+        page,
+        /(?:User|Member) updated\./,
+        testIds.editUser.toast
+      );
       await users.backToListFromEdit();
     });
 
     await test.step("Delete the secondary user from the list", async () => {
       await users.deleteUser(secondaryUserId as number);
-      await expectToast(page, "User deleted.", testIds.users.toast);
+      await expectToast(
+        page,
+        /(?:User|Member) deleted\./,
+        testIds.users.toast
+      );
       await users.assertUserAbsent(secondaryUserId as number);
     });
 

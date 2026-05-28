@@ -13,8 +13,15 @@ const bodyFont = Space_Grotesk({
 });
 
 export const metadata: Metadata = {
-  title: "LorisArk | User Management",
-  description: "Secure and modern user management system.",
+  title: {
+    default: "LorisArk | Roosts & Roots",
+    template: "%s | LorisArk",
+  },
+  description:
+    "Curate roosts, local artisan services, bookings, and stay bundles in one village hospitality network.",
+  icons: {
+    icon: "/icon.svg",
+  },
 };
 
 export default function RootLayout({

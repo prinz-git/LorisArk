@@ -1,5 +1,7 @@
 import { fireEvent, render, screen, waitFor } from "../utils/render";
 import DashboardPage from "../../src/app/(dashboard)/dashboard/page";
+import RoostsPage from "../../src/app/(dashboard)/roosts/page";
+import RootsPage from "../../src/app/(dashboard)/roots/page";
 import { apiFetch } from "../../src/lib/api";
 import { getToken } from "../../src/lib/auth";
 
@@ -103,30 +105,17 @@ function installHostApiMock() {
   });
 }
 
-function installArtisanApiMock() {
+function installArtisanRootsApiMock() {
   const mock = apiFetch as jest.Mock;
   let services: Root[] = [
     {
       id: 21,
-      service_category: "Food",
-      service_description: "Organic Breakfast",
+      service_category: "Craft",
+      service_description: "Pottery Making",
       service_capacity: 4,
-      service_window_start: "08:00",
-      base_price: 22,
+      service_window_start: "14:00",
+      base_price: 45,
       place_name: "Kyoto",
-    },
-  ];
-
-  const today = new Date().toISOString().split("T")[0];
-  let tickets = [
-    {
-      id: 98,
-      status: "new",
-      service_name: "Organic Breakfast",
-      service_category: "Food",
-      roost_name: "The Bamboo Loft",
-      scheduled_date: today,
-      service_time: "08:00",
     },
   ];
 
@@ -137,9 +126,6 @@ function installArtisanApiMock() {
     }
     if (path === "/roots/mine") {
       return services;
-    }
-    if (path === "/artisan/tickets") {
-      return tickets;
     }
     if (path === "/roots/21" && method === "PUT") {
       const body = JSON.parse(options?.body || "{}");
@@ -166,7 +152,6 @@ function installArtisanApiMock() {
     }
     if (path === "/roots/21" && method === "DELETE") {
       services = [];
-      tickets = [];
       return { message: "Root deleted" };
     }
     throw new Error(`Unhandled apiFetch call: ${method} ${path}`);
@@ -183,9 +168,145 @@ describe("DashboardPage", () => {
     jest.clearAllMocks();
   });
 
+  it("shows pending requests with accept, decline reasons, agenda, and profile drawer", async () => {
+    const mock = apiFetch as jest.Mock;
+    let hostDeclined = false;
+    mock.mockImplementation(async (path: string, options?: { method?: string; body?: string }) => {
+      const method = options?.method || "GET";
+      if (path === "/profile") {
+        return { email: "host@test.com", full_name: "Host", role: "host" };
+      }
+      if (path === "/host/stays/summary") {
+        return hostDeclined
+          ? [
+              {
+                bundle_id: 45,
+                nomad_name: "Mika",
+                roost_id: 12,
+                roost_title: "Cedar Room",
+                start_date: "2099-02-01",
+                end_date: "2099-02-04",
+                services: [],
+                status: "host_accepted",
+              },
+            ]
+          : [
+          {
+            bundle_id: 44,
+            nomad_name: "Ari Nomad",
+            roost_id: 11,
+            roost_title: "Bamboo Loft",
+            start_date: "2099-01-01",
+            end_date: "2099-01-03",
+            services: ["Organic Breakfast"],
+            status: "pending",
+            nomad_bio: "Digital nomad looking to experience local pottery techniques.",
+            community_reviews: ["Warm, curious, and left the room spotless."],
+          },
+          {
+            bundle_id: 45,
+            nomad_name: "Mika",
+            roost_id: 12,
+            roost_title: "Cedar Room",
+            start_date: "2099-02-01",
+            end_date: "2099-02-04",
+            services: [],
+            status: "host_accepted",
+          },
+        ];
+      }
+      if (path === "/host/bookings/44/decline" && method === "PUT") {
+        hostDeclined = true;
+        return { id: 44, status: "host_declined", reason: "Maintenance" };
+      }
+      throw new Error(`Unhandled apiFetch call: ${method} ${path}`);
+    });
+
+    render(<DashboardPage />);
+
+    expect(await screen.findByRole("heading", { name: /pending requests/i })).toBeInTheDocument();
+    expect(await screen.findByText(/bamboo loft/i)).toBeInTheDocument();
+    expect(await screen.findByText(/cedar room/i)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /ari nomad/i }));
+    expect(await screen.findByLabelText(/nomad profile drawer/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/digital nomad looking to experience local pottery/i).length).toBeGreaterThan(0);
+    expect(screen.getByText(/verified id/i)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /close/i }));
+
+    fireEvent.click(screen.getByRole("button", { name: /decline/i }));
+    fireEvent.click(screen.getByRole("button", { name: /maintenance/i }));
+    expect(await screen.findByText(/request declined: maintenance/i)).toBeInTheDocument();
+    expect(mock).toHaveBeenCalledWith(
+      "/host/bookings/44/decline",
+      expect.objectContaining({
+        method: "PUT",
+        token: "token",
+        body: JSON.stringify({ reason: "Maintenance" }),
+      })
+    );
+  });
+
+  it("shows artisan tickets blocked by host confirmation and accepts after host approval", async () => {
+    const mock = apiFetch as jest.Mock;
+    let ticketStatus = "pending_host";
+
+    mock.mockImplementation(async (path: string, options?: { method?: string }) => {
+      const method = options?.method || "GET";
+      if (path === "/profile") {
+        return { email: "artisan@test.com", full_name: "Art", role: "artisan" };
+      }
+      if (path === "/artisan/tickets") {
+        return [
+          {
+            id: 98,
+            bundle_id: 7,
+            status: ticketStatus,
+            host_status: ticketStatus === "pending_host" ? "pending_host" : "host_accepted",
+            host_name: "Host User",
+            host_confirmation_message:
+              ticketStatus === "pending_host"
+                ? "Pending confirmation from host Host User"
+                : null,
+            service_name: "Pottery Making",
+            service_category: "Craft",
+            roost_name: "Bamboo Loft",
+            scheduled_date: "2099-02-04",
+            service_time: "14:00",
+            nomad_name: "Ari Nomad",
+          },
+        ];
+      }
+      if (path === "/artisan/tickets/98/accept" && method === "PUT") {
+        ticketStatus = "artisan_accepted";
+        return { id: 98, status: "artisan_accepted" };
+      }
+      throw new Error(`Unhandled apiFetch call: ${method} ${path}`);
+    });
+
+    const view = render(<DashboardPage />);
+
+    expect(await screen.findByText(/pending confirmation from host host user/i)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /accept/i })).not.toBeInTheDocument();
+
+    ticketStatus = "pending_artisan";
+    view.unmount();
+    render(<DashboardPage />);
+
+    expect(await screen.findByRole("button", { name: /accept/i })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /accept/i }));
+
+    await waitFor(() => {
+      expect(mock).toHaveBeenCalledWith(
+        "/artisan/tickets/98/accept",
+        expect.objectContaining({ method: "PUT", token: "token" })
+      );
+    });
+  });
+
   it("shows Wi-Fi field for add roost and prefills it in edit mode", async () => {
     installHostApiMock();
-    render(<DashboardPage />);
+    render(<RoostsPage />);
 
     expect(await screen.findByText(/my roosts/i)).toBeInTheDocument();
 
@@ -204,7 +325,7 @@ describe("DashboardPage", () => {
     const mock = apiFetch as jest.Mock;
 
     installHostApiMock();
-    render(<DashboardPage />);
+    render(<RoostsPage />);
     await screen.findByText(/my roosts/i);
 
     fireEvent.click(screen.getByRole("button", { name: /live/i }));
@@ -230,19 +351,21 @@ describe("DashboardPage", () => {
     confirmSpy.mockRestore();
   });
 
-  it("updates and deletes artisan services", async () => {
+  it("updates and deletes artisan roots from the My Roots page", async () => {
     const confirmSpy = jest.spyOn(window, "confirm").mockReturnValue(true);
     const mock = apiFetch as jest.Mock;
 
-    installArtisanApiMock();
-    render(<DashboardPage />);
-    await screen.findByText(/my services/i);
+    installArtisanRootsApiMock();
+    render(<RootsPage />);
+    await screen.findByText(/my roots/i);
 
-    fireEvent.click(screen.getByTitle(/edit service/i));
+    expect(screen.getByText(/pottery making/i)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByTitle(/edit root/i));
     fireEvent.change(screen.getByLabelText(/what \(service name\)/i), {
-      target: { value: "Organic Brunch" },
+      target: { value: "Pottery Studio" },
     });
-    fireEvent.click(screen.getByRole("button", { name: /update service/i }));
+    fireEvent.click(screen.getByRole("button", { name: /update root/i }));
 
     await waitFor(() => {
       expect(mock).toHaveBeenCalledWith(
@@ -251,7 +374,7 @@ describe("DashboardPage", () => {
       );
     });
 
-    fireEvent.click(screen.getByTitle(/delete service/i));
+    fireEvent.click(screen.getByTitle(/delete root/i));
 
     await waitFor(() => {
       expect(mock).toHaveBeenCalledWith(
@@ -263,4 +386,5 @@ describe("DashboardPage", () => {
     expect(confirmSpy).toHaveBeenCalled();
     confirmSpy.mockRestore();
   });
+
 });
