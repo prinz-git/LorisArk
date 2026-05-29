@@ -16,7 +16,7 @@ const baseNavItems = [
 ];
 
 type Profile = {
-  role: "nomad" | "host" | "artisan";
+  role: "nomad" | "host" | "artisan" | "superadmin";
 };
 
 type SidebarProps = {
@@ -59,7 +59,6 @@ export default function Sidebar({ isOpen = true }: SidebarProps) {
         { label: "Dashboard", href: "/dashboard" },
         { label: "My Roosts", href: "/roosts" },
         { label: "Profile", href: "/profile" },
-        { label: "Users", href: "/users" },
         { label: "Logout", href: "/logout" },
       ];
     }
@@ -68,7 +67,16 @@ export default function Sidebar({ isOpen = true }: SidebarProps) {
         { label: "Dashboard", href: "/dashboard" },
         { label: "My Roots", href: "/roots" },
         { label: "Profile", href: "/profile" },
+        { label: "Logout", href: "/logout" },
+      ];
+    }
+    if (role === "superadmin") {
+      return [
         { label: "Users", href: "/users" },
+        { label: "Roosts", href: "/roosts" },
+        { label: "Roots", href: "/roots" },
+        { label: "Bookings", href: "/bookings" },
+        { label: "Profile", href: "/profile" },
         { label: "Logout", href: "/logout" },
       ];
     }

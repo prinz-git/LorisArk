@@ -7,7 +7,7 @@ import { apiFetch } from "@/lib/api";
 import { getToken } from "@/lib/auth";
 import styles from "./page.module.css";
 
-type Role = "nomad" | "host" | "artisan";
+type Role = "nomad" | "host" | "artisan" | "superadmin";
 
 type Profile = {
   role: Role;
@@ -249,6 +249,9 @@ export default function BookingsPage() {
         if (profileData.role === "nomad") {
           const data = await apiFetch<NomadBookings>("/nomad/bookings", { token });
           setBookings(data);
+        } else if (profileData.role === "superadmin") {
+          const data = await apiFetch<NomadBookings>("/nomad/bookings", { token });
+          setBookings(data);
         } else if (profileData.role === "host") {
           const data = await apiFetch<HostStaySummary[]>("/host/stays/summary", { token });
           setHostStays(data);
@@ -440,6 +443,11 @@ export default function BookingsPage() {
           <h1>Artisan Bookings Dashboard</h1>
           <p>Track workshop rosters, cultural readiness, service timing, and payout cues.</p>
         </header>
+      ) : profile?.role === "superadmin" ? (
+        <header className={styles.header}>
+          <h1>All Bookings</h1>
+          <p>Review stays and root services booked by every nomad.</p>
+        </header>
       ) : (
         <header className={styles.header}>
           <h1>My Bookings</h1>
@@ -579,7 +587,7 @@ export default function BookingsPage() {
         </>
       )}
 
-      {profile?.role === "nomad" && (
+      {(profile?.role === "nomad" || profile?.role === "superadmin") && (
         <>
           <CalendarBoard
             title="Calendar View"
@@ -687,7 +695,7 @@ export default function BookingsPage() {
               )}
             </div>
             <div className={styles.modalActions}>
-              {isUpcomingCancellable(selectedBooking) && (
+              {profile?.role === "nomad" && isUpcomingCancellable(selectedBooking) && (
                 <button
                   type="button"
                   className={styles.btnDanger}
