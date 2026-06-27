@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from fastapi import HTTPException
 
+from app.core.roles import RoleEnum
 from app.models import RoostListing
 from app.repositories.roost_repo import RoostRepository
 from app.repositories.user_repo import UserRepository
@@ -21,7 +22,7 @@ class RoostService:
 
     def _require_host(self, email: str):
         user = self._get_user(email)
-        if user.role != "host":
+        if user.role != RoleEnum.host.value:
             raise HTTPException(
                 status_code=403,
                 detail="Only hosts can create or manage roost listings",
@@ -38,6 +39,8 @@ class RoostService:
 
     def list_mine(self, email: str) -> list[RoostListing]:
         user = self._get_user(email)
+        if user.role == RoleEnum.superadmin.value:
+            return self.roost_repo.list_all()
         return self.roost_repo.list_by_provider(user.id)
 
     def create(self, email: str, payload: RoostCreate) -> RoostListing:

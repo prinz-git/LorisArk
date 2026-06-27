@@ -26,7 +26,7 @@ export default function LoginPage() {
         body: JSON.stringify({ email, password }),
       });
       setToken(data.access_token);
-      const profile = await apiFetch<{ role: "nomad" | "host" | "artisan" }>(
+      const profile = await apiFetch<{ role: "nomad" | "host" | "artisan" | "superadmin" }>(
         "/profile",
         {
           token: data.access_token,
@@ -34,6 +34,10 @@ export default function LoginPage() {
       );
       if (profile.role === "nomad") {
         router.push("/inventory");
+        return;
+      }
+      if (profile.role === "superadmin") {
+        router.push("/users");
         return;
       }
       router.push("/dashboard");
@@ -94,9 +98,9 @@ export default function LoginPage() {
             onSubmit={submit}
           >
             <label className={styles.label}>
-              Email
+              Email or username
               <input
-                type="email"
+                type="text"
                 placeholder="you@example.com"
                 data-testid={testIds.login.emailInput}
                 value={email}

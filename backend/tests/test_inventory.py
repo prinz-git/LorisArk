@@ -171,6 +171,55 @@ def test_root_pagination_and_search(client):
     assert all(item["place_name"] == "Oslo" for item in search_body["items"])
 
 
+def test_superadmin_sees_all_provider_inventory(client, superadmin_token):
+    _, host_token = _register_user(client, "host")
+    _, other_host_token = _register_user(client, "host")
+    _, artisan_token = _register_user(client, "artisan")
+    _, other_artisan_token = _register_user(client, "artisan")
+
+    for title, token in [("First Roost", host_token), ("Second Roost", other_host_token)]:
+        resp = client.post(
+            "/roosts",
+            json={
+                "title": title,
+                "bedroom_type": "Private room",
+                "bedroom_count": 1,
+                "photos": [],
+                "wifi_speed_mbps": 120,
+                "place_name": "Lisbon",
+            },
+            headers=_auth_headers(token),
+        )
+        assert resp.status_code == 200
+
+    for description, token in [
+        ("First Root", artisan_token),
+        ("Second Root", other_artisan_token),
+    ]:
+        resp = client.post(
+            "/roots",
+            json={
+                "service_category": "Food",
+                "service_description": description,
+                "service_capacity": 4,
+                "place_name": "Lisbon",
+            },
+            headers=_auth_headers(token),
+        )
+        assert resp.status_code == 200
+
+    roosts = client.get("/roosts/mine", headers=_auth_headers(superadmin_token))
+    roots = client.get("/roots/mine", headers=_auth_headers(superadmin_token))
+
+    assert roosts.status_code == 200
+    assert roots.status_code == 200
+    assert {item["title"] for item in roosts.json()} == {"First Roost", "Second Roost"}
+    assert {item["service_description"] for item in roots.json()} == {
+        "First Root",
+        "Second Root",
+    }
+
+
 def test_roost_update_and_delete(client):
     _, host_token = _register_user(client, "host")
     _, nomad_token = _register_user(client, "nomad")
