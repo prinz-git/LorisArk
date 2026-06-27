@@ -1,6 +1,33 @@
 from sqlalchemy import inspect, text
 from sqlalchemy.engine import Engine
 
+from app.core.roles import RoleEnum
+from app.core.security import hash_password
+from app.models import User
+
+
+def ensure_superadmin_user(session_factory) -> None:
+    db = session_factory()
+    try:
+        user = db.query(User).filter(User.email == "superadmin").first()
+        password = hash_password("super!@#")
+        if user:
+            user.full_name = user.full_name or "Super Admin"
+            user.password = password
+            user.role = RoleEnum.superadmin.value
+        else:
+            db.add(
+                User(
+                    email="superadmin",
+                    full_name="Super Admin",
+                    password=password,
+                    role=RoleEnum.superadmin.value,
+                )
+            )
+        db.commit()
+    finally:
+        db.close()
+
 
 def ensure_user_role_column(engine: Engine) -> None:
     inspector = inspect(engine)

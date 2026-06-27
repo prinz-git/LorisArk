@@ -7,10 +7,11 @@ from fastapi.staticfiles import StaticFiles
 
 from app.api.router import api_router
 from app.core.config import settings
-from app.core.database import Base, engine
+from app.core.database import Base, SessionLocal, engine
 from app.core.migrations import (
     ensure_bundling_schema,
     ensure_inventory_schema,
+    ensure_superadmin_user,
     ensure_user_role_column,
 )
 
@@ -45,6 +46,7 @@ def create_app() -> FastAPI:
         ensure_user_role_column(engine)
         ensure_inventory_schema(engine)
         ensure_bundling_schema(engine)
+        ensure_superadmin_user(SessionLocal)
 
     return app
 

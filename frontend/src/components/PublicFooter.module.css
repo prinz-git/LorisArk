@@ -1,0 +1,131 @@
+.footer {
+  padding: 0 6vw 3rem;
+  color: #f4f0df;
+}
+
+.inner {
+  background: #1e3a34;
+  border-radius: 8px;
+  padding: 2.25rem;
+  box-shadow: 0 24px 70px rgba(17, 24, 39, 0.22);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.emblem {
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 50%;
+  padding: 0.45rem;
+}
+
+.brandName {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 800;
+}
+
+.tagline {
+  margin: 0.2rem 0 0;
+  color: rgba(244, 240, 223, 0.76);
+  font-size: 0.95rem;
+  font-style: italic;
+}
+
+.linkGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1.5rem;
+}
+
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.72rem;
+}
+
+.group h2 {
+  margin: 0 0 0.2rem;
+  color: #d9e7c0;
+  font-size: 0.76rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.group a {
+  color: rgba(244, 240, 223, 0.82);
+  font-size: 0.95rem;
+  transition: color 0.2s ease, transform 0.2s ease;
+}
+
+.group a:hover {
+  color: #7df9ff;
+  transform: translateX(2px);
+}
+
+.disclaimer {
+  margin-top: 2.2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid rgba(244, 240, 223, 0.18);
+  color: rgba(244, 240, 223, 0.76);
+  line-height: 1.65;
+}
+
+.disclaimer p {
+  max-width: 980px;
+  margin: 0;
+}
+
+.bottomBar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1.4rem;
+  color: rgba(244, 240, 223, 0.88);
+  font-size: 0.92rem;
+  flex-wrap: wrap;
+}
+
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 700;
+}
+
+.dot {
+  width: 0.62rem;
+  height: 0.62rem;
+  border-radius: 50%;
+  background: #4ade80;
+  box-shadow: 0 0 0 4px rgba(74, 222, 128, 0.14);
+}
+
+@media (max-width: 900px) {
+  .linkGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 620px) {
+  .footer {
+    padding-inline: 1rem;
+  }
+
+  .inner {
+    padding: 1.5rem;
+  }
+
+  .brand {
+    align-items: flex-start;
+  }
+
+  .linkGrid {
+    grid-template-columns: 1fr;
+  }
+}

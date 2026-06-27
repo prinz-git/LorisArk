@@ -7,6 +7,7 @@ class RoleEnum(str, Enum):
     nomad = "nomad"
     host = "host"
     artisan = "artisan"
+    superadmin = "superadmin"
 
 
 ROLE_OPTIONS = [

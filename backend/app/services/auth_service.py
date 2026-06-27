@@ -1,5 +1,6 @@
 from fastapi import HTTPException
 
+from app.core.roles import RoleEnum
 from app.core.security import hash_password, verify_password, create_access_token
 from app.repositories.user_repo import UserRepository
 
@@ -9,6 +10,8 @@ class AuthService:
         self.repo = repo
 
     def register(self, email: str, full_name: str, password: str, role: str) -> None:
+        if role == RoleEnum.superadmin.value:
+            raise HTTPException(status_code=403, detail="Super admins cannot self-register")
         if self.repo.get_by_email(email):
             raise HTTPException(status_code=400, detail="User already exists")
         self.repo.create(

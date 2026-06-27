@@ -12,7 +12,7 @@ import styles from "./page.module.css";
 type Profile = {
   email: string;
   full_name: string;
-  role: "nomad" | "host" | "artisan";
+  role: "nomad" | "host" | "artisan" | "superadmin";
 };
 
 type HostStaySummary = {
@@ -170,6 +170,10 @@ export default function DashboardPage() {
 
         if (profileData.role === "nomad") {
           router.replace("/inventory");
+          return;
+        }
+        if (profileData.role === "superadmin") {
+          router.replace("/users");
           return;
         }
 
