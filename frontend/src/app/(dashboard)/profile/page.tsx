@@ -28,6 +28,7 @@ export default function ProfilePage() {
   const [toast, setToast] = useState<{ message: string; tone?: "error" }>({
     message: "",
   });
+  const isSuperadmin = profile?.role === "superadmin";
 
   useEffect(() => {
     const token = getToken();
@@ -47,10 +48,12 @@ export default function ProfilePage() {
           const rolesData = await apiFetch<RoleOption[]>("/roles");
           if (rolesData && rolesData.length > 0) {
             setRoleOptions(rolesData);
-            const nextRole =
-              rolesData.find((option) => option.id === profileData.role)?.id ??
-              rolesData[0].id;
-            setRole(nextRole);
+            if (profileData.role !== "superadmin") {
+              const nextRole =
+                rolesData.find((option) => option.id === profileData.role)?.id ??
+                rolesData[0].id;
+              setRole(nextRole);
+            }
           }
         } catch {
           // Keep defaults when roles cannot be loaded.
@@ -75,7 +78,7 @@ export default function ProfilePage() {
     if (password) {
       params.set("password", password);
     }
-    if (role) {
+    if (role && !isSuperadmin) {
       params.set("role", role);
     }
 
@@ -165,20 +168,32 @@ export default function ProfilePage() {
               onChange={(event) => setPassword(event.target.value)}
             />
           </label>
-          <label className={styles.label}>
-            Role
-            <select
-              value={role}
-              onChange={(event) => setRole(event.target.value)}
-              data-testid={testIds.profile.roleSelect}
-            >
-              {roleOptions.map((option) => (
-                <option key={option.id} value={option.id}>
-                  {option.title} • {option.label}
-                </option>
-              ))}
-            </select>
-          </label>
+          {isSuperadmin ? (
+            <label className={styles.label}>
+              Role
+              <input
+                type="text"
+                data-testid={testIds.profile.roleSelect}
+                value="Super Admin"
+                readOnly
+              />
+            </label>
+          ) : (
+            <label className={styles.label}>
+              Role
+              <select
+                value={role}
+                onChange={(event) => setRole(event.target.value)}
+                data-testid={testIds.profile.roleSelect}
+              >
+                {roleOptions.map((option) => (
+                  <option key={option.id} value={option.id}>
+                    {option.title} • {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
           <div className={styles.actions} data-testid={testIds.profile.actions}>
             <button
               className={styles.primary}
@@ -188,14 +203,16 @@ export default function ProfilePage() {
             >
               Save Changes
             </button>
-            <button
-              className={styles.danger}
-              type="button"
-              data-testid={testIds.profile.deleteButton}
-              onClick={deleteAccount}
-            >
-              Delete Account
-            </button>
+            {!isSuperadmin && (
+              <button
+                className={styles.danger}
+                type="button"
+                data-testid={testIds.profile.deleteButton}
+                onClick={deleteAccount}
+              >
+                Delete Account
+              </button>
+            )}
           </div>
         </form>
       </div>

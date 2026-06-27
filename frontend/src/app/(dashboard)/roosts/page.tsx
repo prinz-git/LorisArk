@@ -12,7 +12,7 @@ import styles from "./page.module.css";
 type Profile = {
   email: string;
   full_name: string;
-  role: "nomad" | "host" | "artisan";
+  role: "nomad" | "host" | "artisan" | "superadmin";
 };
 
 type AvailabilityRange = {
@@ -188,6 +188,12 @@ export default function DashboardPage() {
     setHostSummaries(summaries);
   };
 
+  const refreshRoosts = async (token: string) => {
+    const roosts = await apiFetch<Roost[]>("/roosts/mine", { token });
+    setHostRoosts(roosts);
+    setHostSummaries([]);
+  };
+
   const refreshArtisanData = async (token: string) => {
     const [services, tickets] = await Promise.all([
       apiFetch<Root[]>("/roots/mine", { token }),
@@ -210,12 +216,16 @@ export default function DashboardPage() {
         const profileData = await apiFetch<Profile>("/profile", { token });
         setProfile(profileData);
 
-        if (profileData.role !== "host") {
+        if (profileData.role !== "host" && profileData.role !== "superadmin") {
           router.replace(profileData.role === "nomad" ? "/inventory" : "/dashboard");
           return;
         }
 
-        await refreshHostData(token);
+        if (profileData.role === "superadmin") {
+          await refreshRoosts(token);
+        } else {
+          await refreshHostData(token);
+        }
       } catch (error) {
         setToast({ message: (error as Error).message, tone: "error" });
       } finally {
@@ -442,10 +452,14 @@ export default function DashboardPage() {
       <header className={styles.header} data-testid={testIds.dashboard.header}>
         <div>
           <p className={styles.eyebrow} data-testid={testIds.dashboard.eyebrow}>
-            My Roosts
+            {profile?.role === "superadmin" ? "All Roosts" : "My Roosts"}
           </p>
           <h1 data-testid={testIds.dashboard.greeting}>
-            {loading ? "Loading..." : "Manage Your Roosts"}
+            {loading
+              ? "Loading..."
+              : profile?.role === "superadmin"
+                ? "All Host Roosts"
+                : "Manage Your Roosts"}
           </h1>
           {profile?.role && (
             <p className={styles.roleBadge} data-testid={testIds.dashboard.roleBadge}>
@@ -458,21 +472,23 @@ export default function DashboardPage() {
         </span>
       </header>
 
-      {profile?.role === "host" && (
+      {(profile?.role === "host" || profile?.role === "superadmin") && (
         <section className={styles.surface} data-testid={testIds.dashboard.cards}>
           <div className={styles.sectionHeader}>
-            <h2>My Roosts</h2>
-            <button
-              type="button"
-              className={styles.primary}
-              onClick={() => {
-                setEditingRoostId(null);
-                setRoostForm(defaultRoostForm);
-                setShowRoostModal(true);
-              }}
-            >
-              + Add Roost
-            </button>
+            <h2>{profile?.role === "superadmin" ? "All Roosts" : "My Roosts"}</h2>
+            {profile?.role === "host" && (
+              <button
+                type="button"
+                className={styles.primary}
+                onClick={() => {
+                  setEditingRoostId(null);
+                  setRoostForm(defaultRoostForm);
+                  setShowRoostModal(true);
+                }}
+              >
+                + Add Roost
+              </button>
+            )}
           </div>
 
           {hostRoosts.length === 0 ? (
@@ -494,33 +510,35 @@ export default function DashboardPage() {
                       className={`${styles.statusToggle} ${roost.wifi_active ? styles.live : styles.hidden}`}
                       aria-pressed={roost.wifi_active}
                       title="Toggle status"
-                      disabled={busyId === roost.id}
+                      disabled={profile?.role !== "host" || busyId === roost.id}
                       onClick={() => handleToggleRoostStatus(roost)}
                     >
                       <span className={styles.toggleKnob} />
                       <span>{roost.wifi_active ? "Live" : "Hidden"}</span>
                     </button>
 
-                    <div className={styles.iconActions}>
-                      <button
-                        type="button"
-                        className={styles.iconButton}
-                        title="Edit roost"
-                        disabled={busyId === roost.id}
-                        onClick={() => handleEditRoost(roost)}
-                      >
-                        <EditIcon />
-                      </button>
-                      <button
-                        type="button"
-                        className={styles.iconButton}
-                        title="Delete roost"
-                        disabled={busyId === roost.id}
-                        onClick={() => handleDeleteRoost(roost.id)}
-                      >
-                        <DeleteIcon />
-                      </button>
-                    </div>
+                    {profile?.role === "host" && (
+                      <div className={styles.iconActions}>
+                        <button
+                          type="button"
+                          className={styles.iconButton}
+                          title="Edit roost"
+                          disabled={busyId === roost.id}
+                          onClick={() => handleEditRoost(roost)}
+                        >
+                          <EditIcon />
+                        </button>
+                        <button
+                          type="button"
+                          className={styles.iconButton}
+                          title="Delete roost"
+                          disabled={busyId === roost.id}
+                          onClick={() => handleDeleteRoost(roost.id)}
+                        >
+                          <DeleteIcon />
+                        </button>
+                      </div>
+                    )}
 
                     <div className={styles.nextGuest}>
                       <strong>Next Guest</strong>

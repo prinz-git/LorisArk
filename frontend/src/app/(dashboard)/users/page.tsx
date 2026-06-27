@@ -13,12 +13,18 @@ type User = {
   id: number;
   email: string;
   full_name: string;
+  role: "nomad" | "host" | "artisan" | "superadmin";
+};
+
+type Profile = {
+  role: "nomad" | "host" | "artisan" | "superadmin";
 };
 
 export default function UsersPage() {
   const router = useRouter();
   const [users, setUsers] = useState<User[]>([]);
   const [search, setSearch] = useState("");
+  const [roleFilter, setRoleFilter] = useState("all");
   const [toast, setToast] = useState<{ message: string; tone?: "error" }>({
     message: "",
   });
@@ -32,6 +38,11 @@ export default function UsersPage() {
 
     const load = async () => {
       try {
+        const profile = await apiFetch<Profile>("/profile", { token });
+        if (profile.role !== "superadmin") {
+          router.replace("/dashboard");
+          return;
+        }
         const data = await apiFetch<User[]>("/users", { token });
         setUsers(data);
       } catch (error) {
@@ -43,13 +54,27 @@ export default function UsersPage() {
   }, [router]);
 
   const filtered = useMemo(() => {
-    const query = search.toLowerCase();
+    const query = search.trim().toLowerCase();
     return users.filter(
-      (user) =>
-        user.full_name.toLowerCase().includes(query) ||
-        user.email.toLowerCase().includes(query)
+      (user) => {
+        const matchesSearch =
+          !query ||
+          user.full_name.toLowerCase().includes(query) ||
+          user.email.toLowerCase().includes(query) ||
+          user.role.toLowerCase().includes(query);
+        const matchesRole = roleFilter === "all" || user.role === roleFilter;
+        return matchesSearch && matchesRole;
+      }
     );
-  }, [search, users]);
+  }, [roleFilter, search, users]);
+
+  const roleOptions = useMemo(
+    () => Array.from(new Set(users.map((user) => user.role))).sort(),
+    [users]
+  );
+
+  const formatRole = (value: string) =>
+    value === "superadmin" ? "Super Admin" : value.charAt(0).toUpperCase() + value.slice(1);
 
   const deleteUser = async (id: number) => {
     const token = getToken();
@@ -78,14 +103,29 @@ export default function UsersPage() {
           </p>
           <h1 data-testid={testIds.users.title}>Member Directory</h1>
         </div>
-        <input
-          className={styles.search}
-          type="search"
-          placeholder="Search members"
-          data-testid={testIds.users.searchInput}
-          value={search}
-          onChange={(event) => setSearch(event.target.value)}
-        />
+        <div className={styles.controls}>
+          <input
+            className={styles.search}
+            type="search"
+            placeholder="Search name, email, or role"
+            data-testid={testIds.users.searchInput}
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+          />
+          <select
+            className={styles.filter}
+            value={roleFilter}
+            onChange={(event) => setRoleFilter(event.target.value)}
+            aria-label="Filter members by role"
+          >
+            <option value="all">All roles</option>
+            {roleOptions.map((role) => (
+              <option key={role} value={role}>
+                {formatRole(role)}
+              </option>
+            ))}
+          </select>
+        </div>
       </header>
 
       <div className={styles.table} data-testid={testIds.users.table}>
@@ -93,6 +133,7 @@ export default function UsersPage() {
           <span>ID</span>
           <span>Name</span>
           <span>Email</span>
+          <span>Role</span>
           <span>Actions</span>
         </div>
         {filtered.map((user, index) => (
@@ -108,6 +149,9 @@ export default function UsersPage() {
             <span data-testid={testIdBuilders.usersRowEmail(user.id)}>
               {user.email}
             </span>
+            <span>
+              <span className={styles.roleBadge}>{formatRole(user.role)}</span>
+            </span>
             <span
               className={styles.actions}
               data-testid={testIdBuilders.usersRowActions(user.id)}
@@ -119,17 +163,22 @@ export default function UsersPage() {
               >
                 Edit
               </Link>
-              <button
-                className={styles.delete}
-                type="button"
-                data-testid={testIdBuilders.usersDeleteButton(user.id)}
-                onClick={() => deleteUser(user.id)}
-              >
-                Delete
-              </button>
+              {user.role !== "superadmin" && (
+                <button
+                  className={styles.delete}
+                  type="button"
+                  data-testid={testIdBuilders.usersDeleteButton(user.id)}
+                  onClick={() => deleteUser(user.id)}
+                >
+                  Delete
+                </button>
+              )}
             </span>
           </div>
         ))}
+        {filtered.length === 0 && (
+          <div className={styles.empty}>No members match your search.</div>
+        )}
       </div>
       <Toast
         message={toast.message || null}

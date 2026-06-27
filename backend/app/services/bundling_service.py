@@ -6,6 +6,7 @@ import math
 
 from fastapi import HTTPException
 
+from app.core.roles import RoleEnum
 from app.models import Bundle, BundleItem, RootListing, ServiceTicket
 from app.repositories.bundling_repo import (
     BundleItemRepository,
@@ -119,19 +120,19 @@ class BundlingService:
 
     def _require_nomad(self, email: str):
         user = self._get_user(email)
-        if user.role != "nomad":
+        if user.role != RoleEnum.nomad.value:
             raise HTTPException(status_code=403, detail="Only nomads can bundle stays")
         return user
 
     def _require_host(self, email: str):
         user = self._get_user(email)
-        if user.role != "host":
+        if user.role != RoleEnum.host.value:
             raise HTTPException(status_code=403, detail="Only hosts can access this")
         return user
 
     def _require_artisan(self, email: str):
         user = self._get_user(email)
-        if user.role != "artisan":
+        if user.role != RoleEnum.artisan.value:
             raise HTTPException(status_code=403, detail="Only artisans can access this")
         return user
 
@@ -576,8 +577,13 @@ class BundlingService:
         return {"id": updated.id, "status": updated.status, "reason": reason}
 
     def list_nomad_bookings(self, email: str) -> dict:
-        nomad = self._require_nomad(email)
-        bundles = self.bundle_repo.list_by_nomad(nomad.id)
+        user = self._get_user(email)
+        if user.role == RoleEnum.superadmin.value:
+            bundles = self.bundle_repo.list_all()
+        elif user.role == RoleEnum.nomad.value:
+            bundles = self.bundle_repo.list_by_nomad(user.id)
+        else:
+            raise HTTPException(status_code=403, detail="Only nomads can access bookings")
         if not bundles:
             return {
                 "active_upcoming": [],

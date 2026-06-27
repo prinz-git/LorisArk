@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from fastapi import HTTPException
 
+from app.core.roles import RoleEnum
 from app.models import RootListing
 from app.repositories.root_repo import RootRepository
 from app.repositories.user_repo import UserRepository
@@ -21,7 +22,7 @@ class RootServiceManager:
 
     def _require_artisan(self, email: str):
         user = self._get_user(email)
-        if user.role != "artisan":
+        if user.role != RoleEnum.artisan.value:
             raise HTTPException(
                 status_code=403,
                 detail="Only artisans can create or manage root listings",
@@ -38,6 +39,8 @@ class RootServiceManager:
 
     def list_mine(self, email: str) -> list[RootListing]:
         user = self._get_user(email)
+        if user.role == RoleEnum.superadmin.value:
+            return self.root_repo.list_all()
         return self.root_repo.list_by_provider(user.id)
 
     def create(self, email: str, payload: RootCreate) -> RootListing:

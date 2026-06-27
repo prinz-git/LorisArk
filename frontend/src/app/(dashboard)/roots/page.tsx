@@ -12,7 +12,7 @@ import styles from "./page.module.css";
 type Profile = {
   email: string;
   full_name: string;
-  role: "nomad" | "host" | "artisan";
+  role: "nomad" | "host" | "artisan" | "superadmin";
 };
 
 type Root = {
@@ -108,7 +108,7 @@ export default function RootsPage() {
         const profileData = await apiFetch<Profile>("/profile", { token });
         setProfile(profileData);
 
-        if (profileData.role !== "artisan") {
+        if (profileData.role !== "artisan" && profileData.role !== "superadmin") {
           router.replace(profileData.role === "nomad" ? "/inventory" : "/dashboard");
           return;
         }
@@ -200,10 +200,14 @@ export default function RootsPage() {
       <header className={styles.header} data-testid={testIds.dashboard.header}>
         <div>
           <p className={styles.eyebrow} data-testid={testIds.dashboard.eyebrow}>
-            My Roots
+            {profile?.role === "superadmin" ? "All Roots" : "My Roots"}
           </p>
           <h1 data-testid={testIds.dashboard.greeting}>
-            {loading ? "Loading..." : "Manage Your Roots"}
+            {loading
+              ? "Loading..."
+              : profile?.role === "superadmin"
+                ? "All Artisan Roots"
+                : "Manage Your Roots"}
           </h1>
           {profile?.role && (
             <p className={styles.roleBadge} data-testid={testIds.dashboard.roleBadge}>
@@ -216,24 +220,30 @@ export default function RootsPage() {
         </span>
       </header>
 
-      {profile?.role === "artisan" && (
+      {(profile?.role === "artisan" || profile?.role === "superadmin") && (
         <section className={styles.surface} data-testid={testIds.dashboard.cards}>
           <div className={styles.sectionHeader}>
             <div>
-              <h2>My Roots</h2>
-              <p className={styles.muted}>Manage local experiences, service capacity, pricing, and timing.</p>
+              <h2>{profile?.role === "superadmin" ? "All Roots" : "My Roots"}</h2>
+              <p className={styles.muted}>
+                {profile?.role === "superadmin"
+                  ? "Review local experiences, service capacity, pricing, and timing across all artisans."
+                  : "Manage local experiences, service capacity, pricing, and timing."}
+              </p>
             </div>
-            <button
-              type="button"
-              className={styles.primary}
-              onClick={() => {
-                setEditingServiceId(null);
-                setServiceForm(defaultServiceForm);
-                setShowServiceModal(true);
-              }}
-            >
-              + Add Root
-            </button>
+            {profile?.role === "artisan" && (
+              <button
+                type="button"
+                className={styles.primary}
+                onClick={() => {
+                  setEditingServiceId(null);
+                  setServiceForm(defaultServiceForm);
+                  setShowServiceModal(true);
+                }}
+              >
+                + Add Root
+              </button>
+            )}
           </div>
 
           {services.length === 0 ? (
@@ -252,26 +262,28 @@ export default function RootsPage() {
                       {service.place_name || "Location pending"} · {toPrettyTime(service.service_window_start)}
                     </p>
                   </div>
-                  <div className={styles.iconActions}>
-                    <button
-                      type="button"
-                      className={styles.iconButton}
-                      title="Edit root"
-                      disabled={busyId === service.id}
-                      onClick={() => handleEditService(service)}
-                    >
-                      <EditIcon />
-                    </button>
-                    <button
-                      type="button"
-                      className={styles.iconButton}
-                      title="Delete root"
-                      disabled={busyId === service.id}
-                      onClick={() => handleDeleteService(service.id)}
-                    >
-                      <DeleteIcon />
-                    </button>
-                  </div>
+                  {profile?.role === "artisan" && (
+                    <div className={styles.iconActions}>
+                      <button
+                        type="button"
+                        className={styles.iconButton}
+                        title="Edit root"
+                        disabled={busyId === service.id}
+                        onClick={() => handleEditService(service)}
+                      >
+                        <EditIcon />
+                      </button>
+                      <button
+                        type="button"
+                        className={styles.iconButton}
+                        title="Delete root"
+                        disabled={busyId === service.id}
+                        onClick={() => handleDeleteService(service.id)}
+                      >
+                        <DeleteIcon />
+                      </button>
+                    </div>
+                  )}
                 </article>
               ))}
             </div>

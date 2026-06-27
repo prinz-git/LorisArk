@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user_email, get_db_session
@@ -29,6 +29,8 @@ def update_profile(
     email: str = Depends(get_current_user_email),
     db: Session = Depends(get_db_session),
 ):
+    if role == RoleEnum.superadmin:
+        raise HTTPException(status_code=403, detail="Cannot self-assign super admin")
     service = UserService(UserRepository(db))
     service.update_profile(email, full_name, password, role.value if role else None)
     return {"message": "Profile updated successfully"}
@@ -46,10 +48,11 @@ def delete_own_account(
 
 @router.get("/users")
 def list_users(
-    _: str = Depends(get_current_user_email),
+    email: str = Depends(get_current_user_email),
     db: Session = Depends(get_db_session),
 ):
     service = UserService(UserRepository(db))
+    service.require_superadmin(email)
     return service.list_users()
 
 
@@ -58,10 +61,11 @@ def edit_user(
     user_id: int,
     full_name: str,
     role: RoleEnum | None = None,
-    _: str = Depends(get_current_user_email),
+    email: str = Depends(get_current_user_email),
     db: Session = Depends(get_db_session),
 ):
     service = UserService(UserRepository(db))
+    service.require_superadmin(email)
     service.edit_user(user_id, full_name, role.value if role else None)
     return {"message": "User updated successfully"}
 
@@ -69,9 +73,10 @@ def edit_user(
 @router.delete("/users/{user_id}")
 def delete_user(
     user_id: int,
-    _: str = Depends(get_current_user_email),
+    email: str = Depends(get_current_user_email),
     db: Session = Depends(get_db_session),
 ):
     service = UserService(UserRepository(db))
+    service.require_superadmin(email)
     service.delete_user(user_id)
     return {"message": "User deleted successfully"}
