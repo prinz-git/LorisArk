@@ -1,0 +1,62 @@
+:root {
+  color-scheme: light;
+  --color-moss: #8a9a5b;
+  --color-indigo: #281e5d;
+  --color-sky: #7df9ff;
+  --color-bg: #f7f8f5;
+  --color-surface: #ffffff;
+  --color-border: rgba(40, 30, 93, 0.18);
+  --color-error: #c62828;
+  --color-muted: rgba(40, 30, 93, 0.65);
+  --radius-lg: 20px;
+  --radius-md: 14px;
+  --shadow-card: 0 14px 40px rgba(40, 30, 93, 0.12);
+  --shadow-button: 0 10px 25px rgba(125, 249, 255, 0.35);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  padding: 0;
+  margin: 0;
+  max-width: 100vw;
+  overflow-x: hidden;
+}
+
+body {
+  background: var(--color-bg);
+  color: var(--color-indigo);
+  font-family: var(--font-body), "Space Grotesk", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-display), "Fraunces", serif;
+  margin: 0;
+  color: var(--color-indigo);
+}
+
+p {
+  margin: 0;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}

@@ -1,0 +1,63 @@
+.header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.4rem 6vw 1rem;
+  background: rgba(247, 248, 245, 0.92);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(40, 30, 93, 0.08);
+  transition: padding 0.2s ease, opacity 0.2s ease;
+  z-index: 20;
+}
+
+.compact {
+  padding: 0.75rem 6vw 0.65rem;
+  opacity: 0.88;
+  background: rgba(247, 248, 245, 0.82);
+}
+
+.compact .logoImage {
+  transform: scale(0.9);
+  transition: transform 0.2s ease;
+}
+
+.logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--color-indigo);
+  letter-spacing: 0.04em;
+}
+
+.logoImage {
+  filter: drop-shadow(0 6px 12px rgba(40, 30, 93, 0.2));
+  transition: transform 0.2s ease;
+}
+
+.nav {
+  display: flex;
+  gap: 1.5rem;
+  font-weight: 600;
+}
+
+.link {
+  color: var(--color-indigo);
+  transition: color 0.2s ease;
+}
+
+.link:hover {
+  color: var(--color-moss);
+}
+
+@media (max-width: 720px) {
+  .header {
+    flex-direction: column;
+    gap: 1rem;
+  }
+}
