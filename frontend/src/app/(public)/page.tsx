@@ -1,4 +1,5 @@
 import Link from "next/link";
+import HeroLogoMotion from "@/components/HeroLogoMotion";
 import { testIds } from "@/lib/testids";
 import styles from "./page.module.css";
 
@@ -42,8 +43,10 @@ export default function LandingPage() {
         </div>
       </div>
 
+      <HeroLogoMotion />
+
       <div className={styles.flow} data-testid={testIds.landing.featureCard}>
-        <div className={styles.flowHeader}>
+        <article className={styles.stepCard}>
           <div className={styles.flowIndex}>01</div>
           <div>
             <h2 data-testid={testIds.landing.featureTitle}>Find Your Next Roost</h2>
@@ -53,106 +56,51 @@ export default function LandingPage() {
               that place name.
             </p>
           </div>
-        </div>
-        <div className={styles.roostGrid}>
-          <button className={styles.roostCard} type="button">
-            <div>
-              <p className={styles.roostName}>Cedar Hearth House</p>
-              <p className={styles.roostMeta}>2 beds · Fibre · Garden studio</p>
-            </div>
-            <span className={styles.roostStatus}>Selected</span>
-          </button>
-          <button className={styles.roostCard} type="button">
-            <div>
-              <p className={styles.roostName}>Riverstone Loft</p>
-              <p className={styles.roostMeta}>1 bed · Solar · River walk</p>
-            </div>
-            <span className={styles.roostPrice}>$152 / night</span>
-          </button>
-          <button className={styles.roostCard} type="button">
-            <div>
-              <p className={styles.roostName}>Juniper Courtyard</p>
-              <p className={styles.roostMeta}>3 beds · Cowork · Breakfasts</p>
-            </div>
-            <span className={styles.roostPrice}>$189 / night</span>
-          </button>
-        </div>
+        </article>
 
-        <div className={styles.flowSplit}>
-          <div className={styles.buildCard}>
-            <div className={styles.flowIndex}>02</div>
+        <article className={styles.stepCard}>
+          <div className={styles.flowIndex}>02</div>
+          <div>
             <h3 className={styles.buildTitle}>Build Your Stay</h3>
             <p className={styles.flowCopy}>
               Once a roost is selected, the bundle builder activates with a walkable
               neighborhood view and live service menus.
             </p>
-            <div className={styles.mapShell}>
-              <div className={styles.mapCenter}>
-                <span className={styles.mapDot} />
-              </div>
-              <div className={styles.mapRing} />
-              <div className={styles.mapPin} data-pin="Cafe" />
-              <div className={styles.mapPin} data-pin="Studio" />
-              <div className={styles.mapPin} data-pin="Hike" />
-            </div>
           </div>
+          <div className={styles.signalStack}>
+            <span>Availability match</span>
+            <span>Neighborhood radius</span>
+            <span>Service compatibility</span>
+          </div>
+        </article>
 
-          <div className={styles.menuCard}>
-            <h3 className={styles.menuTitle}>Neighborhood Service Menu</h3>
+        <article
+          className={`${styles.stepCard} ${styles.bundle}`}
+          data-testid={testIds.landing.featureMeta}
+        >
+          <div className={styles.flowIndex}>03</div>
+          <div>
+            <h3 className={styles.bundleTitle}>The Stay Bundle</h3>
             <p className={styles.flowCopy}>
-              Generated in real-time for the selected place name.
+              A single checkout that consolidates independent providers into one
+              timeline and one payment.
             </p>
-            <div className={styles.menuSection}>
-              <span className={styles.menuLabel}>Localized Dining</span>
-              <div className={styles.menuRow}>
-                <span>Sunrise Bakery</span>
-                <span>Breakfast delivery</span>
-              </div>
-              <div className={styles.menuRow}>
-                <span>Hearth &amp; Clay</span>
-                <span>Village supper club</span>
-              </div>
-            </div>
-            <div className={styles.menuSection}>
-              <span className={styles.menuLabel}>Local Experiences</span>
-              <div className={styles.menuRow}>
-                <span>Willow Kayak</span>
-                <span>Sunset paddle</span>
-              </div>
-              <div className={styles.menuRow}>
-                <span>Stonecraft Studio</span>
-                <span>Clay workshop</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className={styles.bundle} data-testid={testIds.landing.featureMeta}>
-          <div className={styles.bundleHeader}>
-            <div className={styles.flowIndex}>03</div>
-            <div>
-              <h3 className={styles.bundleTitle}>The Stay Bundle</h3>
-              <p className={styles.flowCopy}>
-                A single checkout that consolidates independent providers into one
-                timeline and one payment.
-              </p>
-            </div>
           </div>
           <div className={styles.bundleGrid}>
             <div data-testid={testIds.landing.metaSecurity}>
               <span className={styles.metaLabel}>Roost</span>
-              <span className={styles.metaValue}>Cedar Hearth · 6 nights</span>
+              <span className={styles.metaValue}>Selected stay</span>
             </div>
             <div data-testid={testIds.landing.metaSpeed}>
               <span className={styles.metaLabel}>Services</span>
-              <span className={styles.metaValue}>4 artisan sessions</span>
+              <span className={styles.metaValue}>Local add-ons</span>
             </div>
             <div data-testid={testIds.landing.metaData}>
               <span className={styles.metaLabel}>Total</span>
-              <span className={styles.metaValue}>$1,148 · paid once</span>
+              <span className={styles.metaValue}>One checkout</span>
             </div>
           </div>
-        </div>
+        </article>
       </div>
     </section>
   );

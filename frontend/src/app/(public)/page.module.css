@@ -1,11 +1,11 @@
 .hero {
   position: relative;
   display: grid;
-  grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
-  gap: 2.8rem;
-  padding: 3.5rem;
+  grid-template-columns: minmax(0, 0.9fr) minmax(360px, 1.1fr);
+  gap: 1.8rem 3rem;
+  padding: 2.8rem 3.5rem 3.2rem;
   border-radius: 32px;
-  background: linear-gradient(140deg, #f6efe4 0%, #f1f3ea 45%, #e4f0ef 100%);
+  background: linear-gradient(140deg, #f7f8f5 0%, #eef7f7 46%, #f4efe6 100%);
   overflow: hidden;
   box-shadow: 0 35px 80px rgba(60, 50, 38, 0.18);
 }
@@ -39,6 +39,7 @@
   display: flex;
   flex-direction: column;
   gap: 1.3rem;
+  justify-content: center;
 }
 
 .eyebrow {
@@ -125,14 +126,10 @@
 .flow {
   position: relative;
   z-index: 1;
-  background: rgba(255, 255, 255, 0.9);
-  padding: 2.4rem;
-  border-radius: 26px;
-  border: 1px solid rgba(61, 58, 47, 0.12);
-  box-shadow: 0 22px 45px rgba(60, 50, 38, 0.12);
-  display: flex;
-  flex-direction: column;
-  gap: 1.8rem;
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
   animation: rise 0.6s ease both;
 }
 
@@ -147,11 +144,23 @@
   }
 }
 
-.flowHeader {
+.stepCard {
   display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 1rem;
+  grid-template-rows: auto 1fr auto;
+  gap: 0.9rem;
   align-items: start;
+  min-height: 270px;
+  padding: 1.35rem;
+  border-radius: 22px;
+  border: 1px solid rgba(61, 58, 47, 0.12);
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow: 0 18px 38px rgba(60, 50, 38, 0.1);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.stepCard:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 24px 46px rgba(60, 50, 38, 0.14);
 }
 
 .flowIndex {
@@ -171,198 +180,57 @@
   margin-top: 0.4rem;
 }
 
-.roostGrid {
-  display: grid;
-  gap: 0.8rem;
-}
-
-.roostCard {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 1rem;
-  padding: 0.9rem 1rem;
-  border-radius: 18px;
-  border: 1px solid rgba(61, 58, 47, 0.12);
-  background: #fbfaf7;
-  cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.roostCard:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 14px 28px rgba(60, 50, 38, 0.14);
-}
-
-.roostName {
-  font-weight: 700;
-  color: #2d2a23;
-  margin: 0;
-}
-
-.roostMeta {
-  font-size: 0.9rem;
-  color: rgba(61, 58, 47, 0.65);
-  margin: 0.2rem 0 0;
-}
-
-.roostStatus,
-.roostPrice {
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: #2d2a23;
-  background: rgba(79, 111, 96, 0.15);
-  padding: 0.35rem 0.7rem;
-  border-radius: 999px;
-}
-
-.roostStatus {
-  background: rgba(225, 173, 97, 0.35);
-}
-
-.flowSplit {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 1.4rem;
-}
-
-.buildCard,
-.menuCard {
-  background: #fdfcf9;
-  border-radius: 20px;
-  border: 1px solid rgba(61, 58, 47, 0.12);
-  padding: 1.2rem 1.4rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.8rem;
-}
-
 .buildTitle,
-.menuTitle,
-.bundleTitle {
+.bundleTitle,
+.flow h2 {
   font-size: 1.1rem;
   color: #2d2a23;
   margin: 0;
 }
 
-.mapShell {
-  position: relative;
-  height: 180px;
-  border-radius: 18px;
-  background: radial-gradient(circle at top, #e6f0ed, #f6efe4);
-  border: 1px dashed rgba(79, 111, 96, 0.4);
-  overflow: hidden;
-}
-
-.mapCenter {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.mapDot {
-  width: 12px;
-  height: 12px;
-  background: #2d2a23;
-  border-radius: 50%;
-  box-shadow: 0 0 0 8px rgba(79, 111, 96, 0.15);
-}
-
-.mapRing {
-  position: absolute;
-  inset: 24px;
-  border-radius: 50%;
-  border: 1px solid rgba(79, 111, 96, 0.35);
-  animation: pulse 3.5s ease-in-out infinite;
-}
-
-@keyframes pulse {
-  0% {
-    transform: scale(0.98);
-    opacity: 0.6;
-  }
-  50% {
-    transform: scale(1.02);
-    opacity: 1;
-  }
-  100% {
-    transform: scale(0.98);
-    opacity: 0.6;
-  }
-}
-
-.mapPin {
-  position: absolute;
-  width: 12px;
-  height: 12px;
-  background: #7d5d3b;
-  border-radius: 50%;
-}
-
-.mapPin::after {
-  content: attr(data-pin);
-  position: absolute;
-  top: 14px;
-  left: -8px;
-  font-size: 0.7rem;
-  background: rgba(255, 255, 255, 0.8);
-  padding: 0.15rem 0.35rem;
-  border-radius: 999px;
-  color: #3d3a2f;
-}
-
-.mapShell .mapPin:nth-child(3) {
-  top: 22%;
-  left: 20%;
-}
-
-.mapShell .mapPin:nth-child(4) {
-  top: 60%;
-  right: 22%;
-}
-
-.mapShell .mapPin:nth-child(5) {
-  bottom: 20%;
-  left: 45%;
-}
-
-.menuSection {
+.signalStack {
   display: grid;
-  gap: 0.6rem;
-  padding-top: 0.6rem;
-  border-top: 1px dashed rgba(61, 58, 47, 0.12);
+  gap: 0.65rem;
+  margin-top: auto;
 }
 
-.menuLabel {
-  font-size: 0.75rem;
-  text-transform: uppercase;
-  letter-spacing: 0.16em;
-  color: #7d5d3b;
+.signalStack span {
+  position: relative;
+  overflow: hidden;
+  border-radius: 999px;
+  padding: 0.65rem 0.85rem;
+  background: rgba(40, 30, 93, 0.06);
+  color: rgba(40, 30, 93, 0.82);
+  font-size: 0.88rem;
   font-weight: 700;
 }
 
-.menuRow {
-  display: flex;
-  justify-content: space-between;
-  font-size: 0.92rem;
-  color: rgba(61, 58, 47, 0.8);
+.signalStack span::after {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 -45%;
+  width: 45%;
+  background: linear-gradient(90deg, transparent, rgba(125, 249, 255, 0.45), transparent);
+  animation: scan 3.4s ease-in-out infinite;
+}
+
+.signalStack span:nth-child(2)::after {
+  animation-delay: 0.45s;
+}
+
+.signalStack span:nth-child(3)::after {
+  animation-delay: 0.9s;
+}
+
+@keyframes scan {
+  50%,
+  100% {
+    transform: translateX(320%);
+  }
 }
 
 .bundle {
   background: #f5f0e6;
-  border-radius: 20px;
-  border: 1px solid rgba(61, 58, 47, 0.12);
-  padding: 1.2rem 1.4rem;
-  display: grid;
-  gap: 1rem;
-}
-
-.bundleHeader {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 1rem;
 }
 
 .bundleGrid {
@@ -390,19 +258,18 @@
     grid-template-columns: 1fr;
     padding: 2.6rem;
   }
+
+  .flow {
+    grid-template-columns: 1fr;
+  }
+
+  .stepCard {
+    min-height: auto;
+  }
 }
 
 @media (max-width: 640px) {
   .hero {
     padding: 2rem 1.6rem;
-  }
-
-  .flow {
-    padding: 1.8rem;
-  }
-
-  .flowHeader,
-  .bundleHeader {
-    grid-template-columns: 1fr;
   }
 }
