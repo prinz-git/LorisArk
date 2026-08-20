@@ -65,6 +65,22 @@ class RootServiceManager:
             setattr(root, key, value)
         return self.root_repo.update(root)
 
+    def require_photo_upload_allowed(self, email: str, root_id: int) -> RootListing:
+        user = self._require_artisan(email)
+        root = self.root_repo.get_by_id(root_id)
+        if not root:
+            raise HTTPException(status_code=404, detail="Root not found")
+        if root.provider_id != user.id:
+            raise HTTPException(status_code=403, detail="Not allowed to edit")
+        return root
+
+    def add_photo(self, email: str, root_id: int, photo_url: str) -> RootListing:
+        root = self.require_photo_upload_allowed(email, root_id)
+        photos = list(root.photos or [])
+        photos.append(photo_url)
+        root.photos = photos
+        return self.root_repo.update(root)
+
     def delete(self, email: str, root_id: int) -> None:
         user = self._require_artisan(email)
         root = self.root_repo.get_by_id(root_id)

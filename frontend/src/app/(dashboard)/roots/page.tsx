@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Toast from "@/components/Toast";
-import { apiFetch } from "@/lib/api";
+import { apiFetch, mediaUrl } from "@/lib/api";
 import { getToken } from "@/lib/auth";
 import { defaultRoleOptions } from "@/lib/roles";
 import { testIds } from "@/lib/testids";
@@ -23,6 +23,7 @@ type Root = {
   service_window_start?: string | null;
   base_price: number | null;
   place_name: string | null;
+  photos: string[];
 };
 
 type ServiceFormState = {
@@ -32,6 +33,7 @@ type ServiceFormState = {
   dailyLimit: string;
   location: string;
   time: string;
+  photoFile: File | null;
 };
 
 const defaultServiceForm: ServiceFormState = {
@@ -41,6 +43,7 @@ const defaultServiceForm: ServiceFormState = {
   dailyLimit: "",
   location: "",
   time: "08:00",
+  photoFile: null,
 };
 
 function EditIcon() {
@@ -133,6 +136,7 @@ export default function RootsPage() {
       dailyLimit: String(service.service_capacity ?? ""),
       location: service.place_name || "",
       time: service.service_window_start || "08:00",
+      photoFile: null,
     });
     setShowServiceModal(true);
   };
@@ -171,7 +175,7 @@ export default function RootsPage() {
     try {
       const endpoint = editingServiceId ? `/roots/${editingServiceId}` : "/roots";
       const method = editingServiceId ? "PUT" : "POST";
-      await apiFetch<Root>(endpoint, {
+      const savedService = await apiFetch<Root>(endpoint, {
         method,
         token,
         body: JSON.stringify({
@@ -182,9 +186,20 @@ export default function RootsPage() {
           place_name: serviceForm.location,
           service_window_start: serviceForm.time,
           service_window_end: null,
+          photos:
+            services.find((service) => service.id === editingServiceId)?.photos || [],
           is_active: true,
         }),
       });
+      if (serviceForm.photoFile) {
+        const formData = new FormData();
+        formData.append("image", serviceForm.photoFile);
+        await apiFetch<Root>(`/roots/${savedService.id}/photos`, {
+          method: "POST",
+          token,
+          body: formData,
+        });
+      }
       await refreshServices(token);
       setServiceForm(defaultServiceForm);
       setEditingServiceId(null);
@@ -252,6 +267,13 @@ export default function RootsPage() {
             <div className={styles.stack}>
               {services.map((service) => (
                 <article key={service.id} className={styles.card}>
+                  {service.photos?.[0] && (
+                    <img
+                      className={styles.thumbnail}
+                      src={mediaUrl(service.photos[0])}
+                      alt=""
+                    />
+                  )}
                   <div>
                     <h3>{service.service_description}</h3>
                     <p className={styles.muted}>{service.service_category}</p>
@@ -366,6 +388,20 @@ export default function RootsPage() {
                 value={serviceForm.time}
                 onChange={(event) =>
                   setServiceForm((prev) => ({ ...prev, time: event.target.value }))
+                }
+              />
+            </label>
+
+            <label className={styles.field}>
+              Image
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(event) =>
+                  setServiceForm((prev) => ({
+                    ...prev,
+                    photoFile: event.target.files?.[0] || null,
+                  }))
                 }
               />
             </label>

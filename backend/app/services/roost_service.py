@@ -63,6 +63,22 @@ class RoostService:
             setattr(roost, key, value)
         return self.roost_repo.update(roost)
 
+    def require_photo_upload_allowed(self, email: str, roost_id: int) -> RoostListing:
+        user = self._require_host(email)
+        roost = self.roost_repo.get_by_id(roost_id)
+        if not roost:
+            raise HTTPException(status_code=404, detail="Roost not found")
+        if roost.provider_id != user.id:
+            raise HTTPException(status_code=403, detail="Not allowed to edit")
+        return roost
+
+    def add_photo(self, email: str, roost_id: int, photo_url: str) -> RoostListing:
+        roost = self.require_photo_upload_allowed(email, roost_id)
+        photos = list(roost.photos or [])
+        photos.append(photo_url)
+        roost.photos = photos
+        return self.roost_repo.update(roost)
+
     def delete(self, email: str, roost_id: int) -> None:
         user = self._require_host(email)
         roost = self.roost_repo.get_by_id(roost_id)
