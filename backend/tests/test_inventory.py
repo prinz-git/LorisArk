@@ -92,14 +92,16 @@ def test_host_can_upload_roost_image_and_nomad_can_view_url(client):
     )
     assert upload_resp.status_code == 200
     photo_url = upload_resp.json()["photos"][0]
-    assert photo_url.startswith("/static/uploads/roosts/")
+    assert photo_url.startswith("/uploads/roosts/")
 
     _, nomad_token = _register_user(client, "nomad")
     public_resp = client.get("/roosts?page=1&limit=10", headers=_auth_headers(nomad_token))
     assert public_resp.status_code == 200
     assert public_resp.json()["items"][0]["photos"] == [photo_url]
 
-    (Path("backend/app") / photo_url.removeprefix("/")).unlink(missing_ok=True)
+    (Path("backend/app/static/uploads") / photo_url.removeprefix("/uploads/")).unlink(
+        missing_ok=True
+    )
 
 
 def test_artisan_can_upload_root_image_and_nomad_can_view_url(client):
@@ -124,14 +126,16 @@ def test_artisan_can_upload_root_image_and_nomad_can_view_url(client):
     )
     assert upload_resp.status_code == 200
     photo_url = upload_resp.json()["photos"][0]
-    assert photo_url.startswith("/static/uploads/roots/")
+    assert photo_url.startswith("/uploads/roots/")
 
     _, nomad_token = _register_user(client, "nomad")
     public_resp = client.get("/roots?page=1&limit=10", headers=_auth_headers(nomad_token))
     assert public_resp.status_code == 200
     assert public_resp.json()["items"][0]["photos"] == [photo_url]
 
-    (Path("backend/app") / photo_url.removeprefix("/")).unlink(missing_ok=True)
+    (Path("backend/app/static/uploads") / photo_url.removeprefix("/uploads/")).unlink(
+        missing_ok=True
+    )
 
 
 def test_upload_rejects_non_image_files(client):

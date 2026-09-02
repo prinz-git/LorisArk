@@ -15,6 +15,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY backend ./backend
 
 RUN useradd --create-home appuser
+RUN mkdir -p /app/data/uploads /app/backend/app/static/uploads \
+    && chown -R appuser:appuser /app/data /app/backend/app/static/uploads
 USER appuser
 
 EXPOSE 8000

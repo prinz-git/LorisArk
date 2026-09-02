@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user_email, get_db_session
+from app.core.config import settings
 from app.repositories.roost_repo import RoostRepository
 from app.repositories.root_repo import RootRepository
 from app.repositories.user_repo import UserRepository
@@ -26,7 +27,7 @@ from app.services.root_service import RootServiceManager
 
 router = APIRouter()
 
-UPLOAD_ROOT = Path(__file__).resolve().parents[2] / "static" / "uploads"
+UPLOAD_ROOT = Path(settings.UPLOAD_DIR)
 ALLOWED_IMAGE_TYPES = {
     "image/jpeg": ".jpg",
     "image/png": ".png",
@@ -48,7 +49,7 @@ async def _store_image(upload: UploadFile, folder: str) -> str:
     if not content:
         raise HTTPException(status_code=400, detail="Uploaded image is empty")
     destination.write_bytes(content)
-    return f"/static/uploads/{folder}/{filename}"
+    return f"/uploads/{folder}/{filename}"
 
 
 @router.get("/roosts", response_model=RoostPage)
