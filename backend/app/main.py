@@ -30,7 +30,10 @@ def create_app() -> FastAPI:
     app.include_router(api_router)
 
     static_dir = Path(__file__).resolve().parent / "static"
+    upload_dir = Path(settings.UPLOAD_DIR)
+    upload_dir.mkdir(parents=True, exist_ok=True)
     app.mount("/static", StaticFiles(directory=static_dir), name="static")
+    app.mount("/uploads", StaticFiles(directory=upload_dir), name="uploads")
 
     @app.get("/", include_in_schema=False)
     def ui() -> FileResponse:

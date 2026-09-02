@@ -103,6 +103,7 @@ def _ensure_inventory_table(engine: Engine, inspector, table_name: str) -> None:
         required = {"wifi_active", "nightly_rate", "availability_ranges", "is_deleted"}
     else:
         required = {
+            "photos",
             "remaining_capacity",
             "available_days",
             "service_window_start",
@@ -135,6 +136,7 @@ def _ensure_inventory_table(engine: Engine, inspector, table_name: str) -> None:
             "wifi_active": "BOOLEAN",
             "nightly_rate": "FLOAT",
             "availability_ranges": "JSON",
+            "photos": "JSON",
             "is_deleted": "BOOLEAN",
             "remaining_capacity": "INTEGER",
             "available_days": "VARCHAR",
@@ -154,6 +156,10 @@ def _ensure_inventory_table(engine: Engine, inspector, table_name: str) -> None:
         if "is_deleted" in required:
             connection.execute(
                 text(f"UPDATE {table_name} SET is_deleted = 0 WHERE is_deleted IS NULL")
+            )
+        if "photos" in required:
+            connection.execute(
+                text(f"UPDATE {table_name} SET photos = '[]' WHERE photos IS NULL")
             )
 
 
@@ -210,6 +216,7 @@ def _rebuild_sqlite_inventory_table(
             available_days VARCHAR,
             service_window_start VARCHAR,
             service_window_end VARCHAR,
+            photos JSON,
             is_active BOOLEAN NOT NULL,
             is_deleted BOOLEAN NOT NULL,
             base_price FLOAT,
@@ -230,6 +237,7 @@ def _rebuild_sqlite_inventory_table(
             "available_days",
             "service_window_start",
             "service_window_end",
+            "photos",
             "is_active",
             "is_deleted",
             "base_price",
@@ -254,6 +262,8 @@ def _rebuild_sqlite_inventory_table(
                     select_columns.append("service_capacity AS remaining_capacity")
                 else:
                     select_columns.append("NULL AS remaining_capacity")
+            elif column == "photos":
+                select_columns.append("'[]' AS photos")
             else:
                 select_columns.append(f"NULL AS {column}")
     target_columns = desired_columns
