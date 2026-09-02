@@ -11,6 +11,7 @@ os.environ.setdefault("DATABASE_URL", "sqlite:///./test_lorisark.db")
 
 from app.main import app
 from app.database import Base, get_db
+from app.core.migrations import ensure_superadmin_user
 
 TEST_DB_URL = os.environ["DATABASE_URL"]
 
@@ -39,6 +40,7 @@ app.dependency_overrides[get_db] = override_get_db
 def reset_db():
     Base.metadata.drop_all(bind=engine)
     Base.metadata.create_all(bind=engine)
+    ensure_superadmin_user(TestingSessionLocal)
 
 
 # ---------- API Client ----------
@@ -71,5 +73,14 @@ def auth_token(client, registered_user):
     resp = client.post("/login", json={
         "email": registered_user["email"],
         "password": registered_user["password"]
+    })
+    return resp.json()["access_token"]
+
+
+@pytest.fixture
+def superadmin_token(client):
+    resp = client.post("/login", json={
+        "email": "superadmin",
+        "password": "super!@#",
     })
     return resp.json()["access_token"]

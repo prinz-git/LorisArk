@@ -1,4 +1,4 @@
-from sqlalchemy import Boolean, Column, DateTime, Float, ForeignKey, Integer, String
+from sqlalchemy import Boolean, Column, DateTime, Float, ForeignKey, Integer, JSON, String
 from sqlalchemy.sql import func
 
 from app.core.database import Base
@@ -16,6 +16,7 @@ class RootListing(Base):
     available_days = Column(String)
     service_window_start = Column(String)
     service_window_end = Column(String)
+    photos = Column(JSON, default=list)
     is_active = Column(Boolean, nullable=False, default=True)
     is_deleted = Column(Boolean, nullable=False, default=False)
     base_price = Column(Float)

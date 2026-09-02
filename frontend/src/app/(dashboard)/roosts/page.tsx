@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Toast from "@/components/Toast";
-import { apiFetch } from "@/lib/api";
+import { apiFetch, mediaUrl } from "@/lib/api";
 import { getToken } from "@/lib/auth";
 import { defaultRoleOptions } from "@/lib/roles";
 import { testIds } from "@/lib/testids";
@@ -12,7 +12,7 @@ import styles from "./page.module.css";
 type Profile = {
   email: string;
   full_name: string;
-  role: "nomad" | "host" | "artisan";
+  role: "nomad" | "host" | "artisan" | "superadmin";
 };
 
 type AvailabilityRange = {
@@ -27,6 +27,7 @@ type Roost = {
   nightly_rate: number | null;
   wifi_speed_mbps: number;
   wifi_active: boolean;
+  photos: string[];
   availability_ranges: AvailabilityRange[] | null;
 };
 
@@ -48,6 +49,7 @@ type Root = {
   service_window_start?: string | null;
   base_price: number | null;
   place_name: string | null;
+  photos: string[];
 };
 
 type ArtisanTicket = {
@@ -69,6 +71,8 @@ type RoostFormState = {
   wifiSpeed: string;
   status: "live" | "hidden";
   ranges: AvailabilityRange[];
+  photos: string[];
+  photoFile: File | null;
 };
 
 type ServiceFormState = {
@@ -78,6 +82,8 @@ type ServiceFormState = {
   dailyLimit: string;
   location: string;
   time: string;
+  photos: string[];
+  photoFile: File | null;
 };
 
 const defaultRoostForm: RoostFormState = {
@@ -87,6 +93,8 @@ const defaultRoostForm: RoostFormState = {
   wifiSpeed: "",
   status: "live",
   ranges: [{ start_date: "", end_date: "" }],
+  photos: [],
+  photoFile: null,
 };
 
 const defaultServiceForm: ServiceFormState = {
@@ -96,6 +104,8 @@ const defaultServiceForm: ServiceFormState = {
   dailyLimit: "",
   location: "",
   time: "08:00",
+  photos: [],
+  photoFile: null,
 };
 
 function EditIcon() {
@@ -188,6 +198,12 @@ export default function DashboardPage() {
     setHostSummaries(summaries);
   };
 
+  const refreshRoosts = async (token: string) => {
+    const roosts = await apiFetch<Roost[]>("/roosts/mine", { token });
+    setHostRoosts(roosts);
+    setHostSummaries([]);
+  };
+
   const refreshArtisanData = async (token: string) => {
     const [services, tickets] = await Promise.all([
       apiFetch<Root[]>("/roots/mine", { token }),
@@ -210,12 +226,16 @@ export default function DashboardPage() {
         const profileData = await apiFetch<Profile>("/profile", { token });
         setProfile(profileData);
 
-        if (profileData.role !== "host") {
+        if (profileData.role !== "host" && profileData.role !== "superadmin") {
           router.replace(profileData.role === "nomad" ? "/inventory" : "/dashboard");
           return;
         }
 
-        await refreshHostData(token);
+        if (profileData.role === "superadmin") {
+          await refreshRoosts(token);
+        } else {
+          await refreshHostData(token);
+        }
       } catch (error) {
         setToast({ message: (error as Error).message, tone: "error" });
       } finally {
@@ -289,6 +309,8 @@ export default function DashboardPage() {
       price: String(roost.nightly_rate ?? ""),
       wifiSpeed: String(roost.wifi_speed_mbps ?? ""),
       status: roost.wifi_active ? "live" : "hidden",
+      photos: roost.photos || [],
+      photoFile: null,
       ranges:
         roost.availability_ranges && roost.availability_ranges.length > 0
           ? roost.availability_ranges
@@ -330,6 +352,8 @@ export default function DashboardPage() {
       dailyLimit: String(service.service_capacity ?? ""),
       location: service.place_name || "",
       time: service.service_window_start || "08:00",
+      photos: service.photos || [],
+      photoFile: null,
     });
     setShowServiceModal(true);
   };
@@ -378,7 +402,7 @@ export default function DashboardPage() {
       );
       const endpoint = editingRoostId ? `/roosts/${editingRoostId}` : "/roosts";
       const method = editingRoostId ? "PUT" : "POST";
-      await apiFetch<Roost>(endpoint, {
+      const savedRoost = await apiFetch<Roost>(endpoint, {
         method,
         token,
         body: JSON.stringify({
@@ -390,9 +414,18 @@ export default function DashboardPage() {
           availability_ranges: availabilityRanges,
           bedroom_type: "Private room",
           bedroom_count: 1,
-          photos: [],
+          photos: roostForm.photos,
         }),
       });
+      if (roostForm.photoFile) {
+        const formData = new FormData();
+        formData.append("image", roostForm.photoFile);
+        await apiFetch<Roost>(`/roosts/${savedRoost.id}/photos`, {
+          method: "POST",
+          token,
+          body: formData,
+        });
+      }
       await refreshHostData(token);
       setRoostForm(defaultRoostForm);
       setEditingRoostId(null);
@@ -413,7 +446,7 @@ export default function DashboardPage() {
     try {
       const endpoint = editingServiceId ? `/roots/${editingServiceId}` : "/roots";
       const method = editingServiceId ? "PUT" : "POST";
-      await apiFetch<Root>(endpoint, {
+      const savedService = await apiFetch<Root>(endpoint, {
         method,
         token,
         body: JSON.stringify({
@@ -424,9 +457,19 @@ export default function DashboardPage() {
           place_name: serviceForm.location,
           service_window_start: serviceForm.time,
           service_window_end: null,
+          photos: serviceForm.photos,
           is_active: true,
         }),
       });
+      if (serviceForm.photoFile) {
+        const formData = new FormData();
+        formData.append("image", serviceForm.photoFile);
+        await apiFetch<Root>(`/roots/${savedService.id}/photos`, {
+          method: "POST",
+          token,
+          body: formData,
+        });
+      }
       await refreshArtisanData(token);
       setServiceForm(defaultServiceForm);
       setEditingServiceId(null);
@@ -442,10 +485,14 @@ export default function DashboardPage() {
       <header className={styles.header} data-testid={testIds.dashboard.header}>
         <div>
           <p className={styles.eyebrow} data-testid={testIds.dashboard.eyebrow}>
-            My Roosts
+            {profile?.role === "superadmin" ? "All Roosts" : "My Roosts"}
           </p>
           <h1 data-testid={testIds.dashboard.greeting}>
-            {loading ? "Loading..." : "Manage Your Roosts"}
+            {loading
+              ? "Loading..."
+              : profile?.role === "superadmin"
+                ? "All Host Roosts"
+                : "Manage Your Roosts"}
           </h1>
           {profile?.role && (
             <p className={styles.roleBadge} data-testid={testIds.dashboard.roleBadge}>
@@ -458,21 +505,23 @@ export default function DashboardPage() {
         </span>
       </header>
 
-      {profile?.role === "host" && (
+      {(profile?.role === "host" || profile?.role === "superadmin") && (
         <section className={styles.surface} data-testid={testIds.dashboard.cards}>
           <div className={styles.sectionHeader}>
-            <h2>My Roosts</h2>
-            <button
-              type="button"
-              className={styles.primary}
-              onClick={() => {
-                setEditingRoostId(null);
-                setRoostForm(defaultRoostForm);
-                setShowRoostModal(true);
-              }}
-            >
-              + Add Roost
-            </button>
+            <h2>{profile?.role === "superadmin" ? "All Roosts" : "My Roosts"}</h2>
+            {profile?.role === "host" && (
+              <button
+                type="button"
+                className={styles.primary}
+                onClick={() => {
+                  setEditingRoostId(null);
+                  setRoostForm(defaultRoostForm);
+                  setShowRoostModal(true);
+                }}
+              >
+                + Add Roost
+              </button>
+            )}
           </div>
 
           {hostRoosts.length === 0 ? (
@@ -483,6 +532,13 @@ export default function DashboardPage() {
                 const nextGuest = nextGuestForRoost(roost.id);
                 return (
                   <article key={roost.id} className={styles.card}>
+                    {roost.photos?.[0] && (
+                      <img
+                        className={styles.thumbnail}
+                        src={mediaUrl(roost.photos[0])}
+                        alt=""
+                      />
+                    )}
                     <div>
                       <h3>{roost.title}</h3>
                       <p className={styles.muted}>{roost.place_name || "Location pending"}</p>
@@ -494,33 +550,35 @@ export default function DashboardPage() {
                       className={`${styles.statusToggle} ${roost.wifi_active ? styles.live : styles.hidden}`}
                       aria-pressed={roost.wifi_active}
                       title="Toggle status"
-                      disabled={busyId === roost.id}
+                      disabled={profile?.role !== "host" || busyId === roost.id}
                       onClick={() => handleToggleRoostStatus(roost)}
                     >
                       <span className={styles.toggleKnob} />
                       <span>{roost.wifi_active ? "Live" : "Hidden"}</span>
                     </button>
 
-                    <div className={styles.iconActions}>
-                      <button
-                        type="button"
-                        className={styles.iconButton}
-                        title="Edit roost"
-                        disabled={busyId === roost.id}
-                        onClick={() => handleEditRoost(roost)}
-                      >
-                        <EditIcon />
-                      </button>
-                      <button
-                        type="button"
-                        className={styles.iconButton}
-                        title="Delete roost"
-                        disabled={busyId === roost.id}
-                        onClick={() => handleDeleteRoost(roost.id)}
-                      >
-                        <DeleteIcon />
-                      </button>
-                    </div>
+                    {profile?.role === "host" && (
+                      <div className={styles.iconActions}>
+                        <button
+                          type="button"
+                          className={styles.iconButton}
+                          title="Edit roost"
+                          disabled={busyId === roost.id}
+                          onClick={() => handleEditRoost(roost)}
+                        >
+                          <EditIcon />
+                        </button>
+                        <button
+                          type="button"
+                          className={styles.iconButton}
+                          title="Delete roost"
+                          disabled={busyId === roost.id}
+                          onClick={() => handleDeleteRoost(roost.id)}
+                        >
+                          <DeleteIcon />
+                        </button>
+                      </div>
+                    )}
 
                     <div className={styles.nextGuest}>
                       <strong>Next Guest</strong>
@@ -579,6 +637,13 @@ export default function DashboardPage() {
             <div className={styles.stack}>
               {artisanServices.map((service) => (
                 <article key={service.id} className={styles.card}>
+                  {service.photos?.[0] && (
+                    <img
+                      className={styles.thumbnail}
+                      src={mediaUrl(service.photos[0])}
+                      alt=""
+                    />
+                  )}
                   <div>
                     <h3>{service.service_description}</h3>
                     <p className={styles.muted}>{service.service_category}</p>
@@ -720,6 +785,20 @@ export default function DashboardPage() {
               </select>
             </label>
 
+            <label className={styles.field}>
+              Image
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(event) =>
+                  setRoostForm((prev) => ({
+                    ...prev,
+                    photoFile: event.target.files?.[0] || null,
+                  }))
+                }
+              />
+            </label>
+
             <div className={styles.modalActions}>
               <button type="button" className={styles.ghost} onClick={() => setShowRoostModal(false)}>
                 Cancel
@@ -817,6 +896,20 @@ export default function DashboardPage() {
                 value={serviceForm.time}
                 onChange={(event) =>
                   setServiceForm((prev) => ({ ...prev, time: event.target.value }))
+                }
+              />
+            </label>
+
+            <label className={styles.field}>
+              Image
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(event) =>
+                  setServiceForm((prev) => ({
+                    ...prev,
+                    photoFile: event.target.files?.[0] || null,
+                  }))
                 }
               />
             </label>

@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Toast from "@/components/Toast";
-import { apiFetch } from "@/lib/api";
+import { apiFetch, mediaUrl } from "@/lib/api";
 import { getToken } from "@/lib/auth";
 import { testIds } from "@/lib/testids";
 import styles from "./page.module.css";
@@ -47,6 +47,7 @@ type Root = {
   distance_km: number | null;
   walk_minutes: number | null;
   category_group: string;
+  photos: string[];
 };
 
 type BundlePreview = {
@@ -417,6 +418,13 @@ export default function InventoryPage() {
                   ) : (
                     roostResults.map((roost) => (
                       <article key={roost.id} className={styles.listItem}>
+                        {roost.photos?.[0] && (
+                          <img
+                            className={styles.thumbnail}
+                            src={mediaUrl(roost.photos[0])}
+                            alt=""
+                          />
+                        )}
                         <div>
                           <strong>{roost.title}</strong>
                           <p>
@@ -510,6 +518,13 @@ export default function InventoryPage() {
                     const isSelected = selectedRootIds.includes(root.id);
                     return (
                       <article key={root.id} className={styles.listItem}>
+                        {root.photos?.[0] && (
+                          <img
+                            className={styles.thumbnail}
+                            src={mediaUrl(root.photos[0])}
+                            alt=""
+                          />
+                        )}
                         <div>
                           <strong>{root.service_category}</strong>
                           <p>{root.service_description}</p>
@@ -610,6 +625,13 @@ export default function InventoryPage() {
         <div className={styles.modalOverlay} role="dialog" aria-modal="true">
           <div className={styles.modal}>
             <h3>{roostDetail.title}</h3>
+            {roostDetail.photos?.length > 0 && (
+              <div className={styles.gallery}>
+                {roostDetail.photos.map((photo) => (
+                  <img key={photo} src={mediaUrl(photo)} alt="" />
+                ))}
+              </div>
+            )}
             <p>Type: {roostDetail.bedroom_type}</p>
             <p>Bedrooms: {roostDetail.bedroom_count ?? "N/A"}</p>
             <p>Wi-Fi: {roostDetail.wifi_speed_mbps} Mbps</p>
@@ -630,6 +652,13 @@ export default function InventoryPage() {
         <div className={styles.modalOverlay} role="dialog" aria-modal="true">
           <div className={styles.modal}>
             <h3>{rootDetail.service_category}</h3>
+            {rootDetail.photos?.length > 0 && (
+              <div className={styles.gallery}>
+                {rootDetail.photos.map((photo) => (
+                  <img key={photo} src={mediaUrl(photo)} alt="" />
+                ))}
+              </div>
+            )}
             <p>{rootDetail.service_description}</p>
             <p>Capacity: {rootDetail.service_capacity}</p>
             <p>Price: {rootDetail.base_price ?? 0}</p>

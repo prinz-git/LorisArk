@@ -125,6 +125,15 @@
   background: rgba(247, 248, 245, 0.7);
 }
 
+.thumbnail {
+  width: 112px;
+  height: 84px;
+  flex: 0 0 112px;
+  border-radius: 0.7rem;
+  object-fit: cover;
+  background: rgba(40, 30, 93, 0.08);
+}
+
 .listItem strong {
   display: block;
 }
@@ -219,6 +228,20 @@
   color: var(--color-muted);
 }
 
+.gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 0.6rem;
+}
+
+.gallery img {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  border-radius: 0.8rem;
+  object-fit: cover;
+  background: rgba(40, 30, 93, 0.08);
+}
+
 @media (max-width: 900px) {
   .findFields {
     grid-template-columns: 1fr;
@@ -226,6 +249,12 @@
 
   .listItem {
     flex-direction: column;
+  }
+
+  .thumbnail {
+    width: 100%;
+    height: 180px;
+    flex-basis: auto;
   }
 
   .inlineExpand {

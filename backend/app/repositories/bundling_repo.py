@@ -38,6 +38,13 @@ class BundleRepository:
             .all()
         )
 
+    def list_all(self) -> list[Bundle]:
+        return (
+            self.db.query(Bundle)
+            .order_by(Bundle.start_date.desc(), Bundle.id.desc())
+            .all()
+        )
+
     def get_by_id(self, bundle_id: int) -> Bundle | None:
         return self.db.query(Bundle).filter(Bundle.id == bundle_id).first()
 

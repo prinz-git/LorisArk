@@ -107,6 +107,7 @@ class RootCreate(BaseModel):
     available_days: str | None = None
     service_window_start: str | None = None
     service_window_end: str | None = None
+    photos: list[str] = Field(default_factory=list)
     is_active: bool = True
     base_price: float | None = None
     place_name: str
@@ -122,6 +123,7 @@ class RootUpdate(BaseModel):
     available_days: str | None = None
     service_window_start: str | None = None
     service_window_end: str | None = None
+    photos: list[str] | None = None
     is_active: bool | None = None
     base_price: float | None = None
     place_name: str | None = None
@@ -139,6 +141,7 @@ class RootResponse(BaseModel):
     available_days: str | None
     service_window_start: str | None
     service_window_end: str | None
+    photos: list[str]
     is_active: bool
     base_price: float | None
     place_name: str | None

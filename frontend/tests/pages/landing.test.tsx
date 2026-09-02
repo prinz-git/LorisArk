@@ -7,7 +7,7 @@ describe("LandingPage", () => {
 
     expect(
       screen.getByRole("heading", {
-        name: /turn villages into distributed boutique resorts/i,
+        name: /roosts & roots/i,
       }),
     ).toBeInTheDocument();
 

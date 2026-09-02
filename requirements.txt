@@ -11,3 +11,4 @@ email-validator
 bcrypt==4.3.0
 playwright
 gunicorn
+python-multipart
