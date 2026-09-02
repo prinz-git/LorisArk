@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from fastapi import HTTPException
 
+from app.core.roles import RoleEnum
 from app.models import RootListing
 from app.repositories.root_repo import RootRepository
 from app.repositories.user_repo import UserRepository
@@ -21,7 +22,7 @@ class RootServiceManager:
 
     def _require_artisan(self, email: str):
         user = self._get_user(email)
-        if user.role != "artisan":
+        if user.role != RoleEnum.artisan.value:
             raise HTTPException(
                 status_code=403,
                 detail="Only artisans can create or manage root listings",
@@ -38,6 +39,8 @@ class RootServiceManager:
 
     def list_mine(self, email: str) -> list[RootListing]:
         user = self._get_user(email)
+        if user.role == RoleEnum.superadmin.value:
+            return self.root_repo.list_all()
         return self.root_repo.list_by_provider(user.id)
 
     def create(self, email: str, payload: RootCreate) -> RootListing:
@@ -60,6 +63,22 @@ class RootServiceManager:
             updates["remaining_capacity"] = updates["service_capacity"]
         for key, value in updates.items():
             setattr(root, key, value)
+        return self.root_repo.update(root)
+
+    def require_photo_upload_allowed(self, email: str, root_id: int) -> RootListing:
+        user = self._require_artisan(email)
+        root = self.root_repo.get_by_id(root_id)
+        if not root:
+            raise HTTPException(status_code=404, detail="Root not found")
+        if root.provider_id != user.id:
+            raise HTTPException(status_code=403, detail="Not allowed to edit")
+        return root
+
+    def add_photo(self, email: str, root_id: int, photo_url: str) -> RootListing:
+        root = self.require_photo_upload_allowed(email, root_id)
+        photos = list(root.photos or [])
+        photos.append(photo_url)
+        root.photos = photos
         return self.root_repo.update(root)
 
     def delete(self, email: str, root_id: int) -> None:

@@ -39,10 +39,19 @@ def test_delete_own_profile(client, auth_token):
     assert resp.status_code == 200
 
 
-def test_list_users(client, auth_token):
+def test_list_users_requires_superadmin(client, auth_token):
     resp = client.get(
         "/users",
         headers={"Authorization": f"Bearer {auth_token}"}
+    )
+
+    assert resp.status_code == 403
+
+
+def test_list_users(client, superadmin_token):
+    resp = client.get(
+        "/users",
+        headers={"Authorization": f"Bearer {superadmin_token}"}
     )
 
     assert resp.status_code == 200
@@ -50,17 +59,17 @@ def test_list_users(client, auth_token):
     assert "role" in resp.json()[0]
 
 
-def test_edit_user(client, auth_token, registered_user):
+def test_edit_user(client, superadmin_token, registered_user):
     users = client.get(
         "/users",
-        headers={"Authorization": f"Bearer {auth_token}"}
+        headers={"Authorization": f"Bearer {superadmin_token}"}
     ).json()
 
-    user_id = users[0]["id"]
+    user_id = next(user for user in users if user["email"] == registered_user["email"])["id"]
 
     resp = client.put(
         f"/users/{user_id}",
-        headers={"Authorization": f"Bearer {auth_token}"},
+        headers={"Authorization": f"Bearer {superadmin_token}"},
         params={"full_name": "Edited Name", "role": "nomad"}
     )
 
@@ -68,7 +77,7 @@ def test_edit_user(client, auth_token, registered_user):
 
     updated_users = client.get(
         "/users",
-        headers={"Authorization": f"Bearer {auth_token}"}
+        headers={"Authorization": f"Bearer {superadmin_token}"}
     ).json()
     updated_user = next(user for user in updated_users if user["id"] == user_id)
     assert updated_user["role"] == "nomad"
@@ -81,17 +90,32 @@ def test_roles_list(client):
     assert resp.json()[0]["id"] in {"nomad", "host", "artisan"}
 
 
-def test_delete_user(client, auth_token):
+def test_delete_user(client, superadmin_token, registered_user):
     users = client.get(
         "/users",
-        headers={"Authorization": f"Bearer {auth_token}"}
+        headers={"Authorization": f"Bearer {superadmin_token}"}
     ).json()
 
-    user_id = users[0]["id"]
+    user_id = next(user for user in users if user["email"] == registered_user["email"])["id"]
 
     resp = client.delete(
         f"/users/{user_id}",
-        headers={"Authorization": f"Bearer {auth_token}"}
+        headers={"Authorization": f"Bearer {superadmin_token}"}
     )
 
     assert resp.status_code == 200
+
+
+def test_superadmin_user_cannot_be_deleted(client, superadmin_token):
+    users = client.get(
+        "/users",
+        headers={"Authorization": f"Bearer {superadmin_token}"}
+    ).json()
+    superadmin_id = next(user for user in users if user["email"] == "superadmin")["id"]
+
+    resp = client.delete(
+        f"/users/{superadmin_id}",
+        headers={"Authorization": f"Bearer {superadmin_token}"}
+    )
+
+    assert resp.status_code == 403

@@ -1,11 +1,11 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel
 
 from app.core.roles import RoleEnum
 
 
 class UserResponse(BaseModel):
     id: int
-    email: EmailStr
+    email: str
     full_name: str
     role: RoleEnum
 

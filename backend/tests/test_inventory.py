@@ -1,4 +1,5 @@
 import uuid
+from pathlib import Path
 
 
 def _auth_headers(token: str) -> dict:
@@ -67,6 +68,96 @@ def test_artisan_can_create_root(client):
     mine_resp = client.get("/roots/mine", headers=_auth_headers(token))
     assert mine_resp.status_code == 200
     assert len(mine_resp.json()) == 1
+
+
+def test_host_can_upload_roost_image_and_nomad_can_view_url(client):
+    _, host_token = _register_user(client, "host")
+    roost_resp = client.post(
+        "/roosts",
+        json={
+            "title": "Image Roost",
+            "bedroom_type": "Private room",
+            "wifi_speed_mbps": 120,
+            "place_name": "Lisbon",
+            "photos": [],
+        },
+        headers=_auth_headers(host_token),
+    )
+    assert roost_resp.status_code == 200
+
+    upload_resp = client.post(
+        f"/roosts/{roost_resp.json()['id']}/photos",
+        files={"image": ("room.png", b"\x89PNG\r\n\x1a\n", "image/png")},
+        headers=_auth_headers(host_token),
+    )
+    assert upload_resp.status_code == 200
+    photo_url = upload_resp.json()["photos"][0]
+    assert photo_url.startswith("/uploads/roosts/")
+
+    _, nomad_token = _register_user(client, "nomad")
+    public_resp = client.get("/roosts?page=1&limit=10", headers=_auth_headers(nomad_token))
+    assert public_resp.status_code == 200
+    assert public_resp.json()["items"][0]["photos"] == [photo_url]
+
+    (Path("backend/app/static/uploads") / photo_url.removeprefix("/uploads/")).unlink(
+        missing_ok=True
+    )
+
+
+def test_artisan_can_upload_root_image_and_nomad_can_view_url(client):
+    _, artisan_token = _register_user(client, "artisan")
+    root_resp = client.post(
+        "/roots",
+        json={
+            "service_category": "Food",
+            "service_description": "Image Supper",
+            "service_capacity": 4,
+            "place_name": "Lisbon",
+            "photos": [],
+        },
+        headers=_auth_headers(artisan_token),
+    )
+    assert root_resp.status_code == 200
+
+    upload_resp = client.post(
+        f"/roots/{root_resp.json()['id']}/photos",
+        files={"image": ("supper.png", b"\x89PNG\r\n\x1a\n", "image/png")},
+        headers=_auth_headers(artisan_token),
+    )
+    assert upload_resp.status_code == 200
+    photo_url = upload_resp.json()["photos"][0]
+    assert photo_url.startswith("/uploads/roots/")
+
+    _, nomad_token = _register_user(client, "nomad")
+    public_resp = client.get("/roots?page=1&limit=10", headers=_auth_headers(nomad_token))
+    assert public_resp.status_code == 200
+    assert public_resp.json()["items"][0]["photos"] == [photo_url]
+
+    (Path("backend/app/static/uploads") / photo_url.removeprefix("/uploads/")).unlink(
+        missing_ok=True
+    )
+
+
+def test_upload_rejects_non_image_files(client):
+    _, host_token = _register_user(client, "host")
+    roost_resp = client.post(
+        "/roosts",
+        json={
+            "title": "No Text Files",
+            "bedroom_type": "Private room",
+            "wifi_speed_mbps": 120,
+            "place_name": "Lisbon",
+        },
+        headers=_auth_headers(host_token),
+    )
+    assert roost_resp.status_code == 200
+
+    upload_resp = client.post(
+        f"/roosts/{roost_resp.json()['id']}/photos",
+        files={"image": ("notes.txt", b"hello", "text/plain")},
+        headers=_auth_headers(host_token),
+    )
+    assert upload_resp.status_code == 400
 
 
 def test_role_guard_blocks_mismatch(client):
@@ -169,6 +260,55 @@ def test_root_pagination_and_search(client):
     search_body = search.json()
     assert search_body["total"] == 2
     assert all(item["place_name"] == "Oslo" for item in search_body["items"])
+
+
+def test_superadmin_sees_all_provider_inventory(client, superadmin_token):
+    _, host_token = _register_user(client, "host")
+    _, other_host_token = _register_user(client, "host")
+    _, artisan_token = _register_user(client, "artisan")
+    _, other_artisan_token = _register_user(client, "artisan")
+
+    for title, token in [("First Roost", host_token), ("Second Roost", other_host_token)]:
+        resp = client.post(
+            "/roosts",
+            json={
+                "title": title,
+                "bedroom_type": "Private room",
+                "bedroom_count": 1,
+                "photos": [],
+                "wifi_speed_mbps": 120,
+                "place_name": "Lisbon",
+            },
+            headers=_auth_headers(token),
+        )
+        assert resp.status_code == 200
+
+    for description, token in [
+        ("First Root", artisan_token),
+        ("Second Root", other_artisan_token),
+    ]:
+        resp = client.post(
+            "/roots",
+            json={
+                "service_category": "Food",
+                "service_description": description,
+                "service_capacity": 4,
+                "place_name": "Lisbon",
+            },
+            headers=_auth_headers(token),
+        )
+        assert resp.status_code == 200
+
+    roosts = client.get("/roosts/mine", headers=_auth_headers(superadmin_token))
+    roots = client.get("/roots/mine", headers=_auth_headers(superadmin_token))
+
+    assert roosts.status_code == 200
+    assert roots.status_code == 200
+    assert {item["title"] for item in roosts.json()} == {"First Roost", "Second Roost"}
+    assert {item["service_description"] for item in roots.json()} == {
+        "First Root",
+        "Second Root",
+    }
 
 
 def test_roost_update_and_delete(client):

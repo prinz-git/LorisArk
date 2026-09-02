@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Toast from "@/components/Toast";
-import { apiFetch } from "@/lib/api";
+import { apiFetch, mediaUrl } from "@/lib/api";
 import { getToken } from "@/lib/auth";
 import { defaultRoleOptions } from "@/lib/roles";
 import { testIds } from "@/lib/testids";
@@ -12,7 +12,7 @@ import styles from "./page.module.css";
 type Profile = {
   email: string;
   full_name: string;
-  role: "nomad" | "host" | "artisan";
+  role: "nomad" | "host" | "artisan" | "superadmin";
 };
 
 type Root = {
@@ -23,6 +23,7 @@ type Root = {
   service_window_start?: string | null;
   base_price: number | null;
   place_name: string | null;
+  photos: string[];
 };
 
 type ServiceFormState = {
@@ -32,6 +33,7 @@ type ServiceFormState = {
   dailyLimit: string;
   location: string;
   time: string;
+  photoFile: File | null;
 };
 
 const defaultServiceForm: ServiceFormState = {
@@ -41,6 +43,7 @@ const defaultServiceForm: ServiceFormState = {
   dailyLimit: "",
   location: "",
   time: "08:00",
+  photoFile: null,
 };
 
 function EditIcon() {
@@ -108,7 +111,7 @@ export default function RootsPage() {
         const profileData = await apiFetch<Profile>("/profile", { token });
         setProfile(profileData);
 
-        if (profileData.role !== "artisan") {
+        if (profileData.role !== "artisan" && profileData.role !== "superadmin") {
           router.replace(profileData.role === "nomad" ? "/inventory" : "/dashboard");
           return;
         }
@@ -133,6 +136,7 @@ export default function RootsPage() {
       dailyLimit: String(service.service_capacity ?? ""),
       location: service.place_name || "",
       time: service.service_window_start || "08:00",
+      photoFile: null,
     });
     setShowServiceModal(true);
   };
@@ -171,7 +175,7 @@ export default function RootsPage() {
     try {
       const endpoint = editingServiceId ? `/roots/${editingServiceId}` : "/roots";
       const method = editingServiceId ? "PUT" : "POST";
-      await apiFetch<Root>(endpoint, {
+      const savedService = await apiFetch<Root>(endpoint, {
         method,
         token,
         body: JSON.stringify({
@@ -182,9 +186,20 @@ export default function RootsPage() {
           place_name: serviceForm.location,
           service_window_start: serviceForm.time,
           service_window_end: null,
+          photos:
+            services.find((service) => service.id === editingServiceId)?.photos || [],
           is_active: true,
         }),
       });
+      if (serviceForm.photoFile) {
+        const formData = new FormData();
+        formData.append("image", serviceForm.photoFile);
+        await apiFetch<Root>(`/roots/${savedService.id}/photos`, {
+          method: "POST",
+          token,
+          body: formData,
+        });
+      }
       await refreshServices(token);
       setServiceForm(defaultServiceForm);
       setEditingServiceId(null);
@@ -200,10 +215,14 @@ export default function RootsPage() {
       <header className={styles.header} data-testid={testIds.dashboard.header}>
         <div>
           <p className={styles.eyebrow} data-testid={testIds.dashboard.eyebrow}>
-            My Roots
+            {profile?.role === "superadmin" ? "All Roots" : "My Roots"}
           </p>
           <h1 data-testid={testIds.dashboard.greeting}>
-            {loading ? "Loading..." : "Manage Your Roots"}
+            {loading
+              ? "Loading..."
+              : profile?.role === "superadmin"
+                ? "All Artisan Roots"
+                : "Manage Your Roots"}
           </h1>
           {profile?.role && (
             <p className={styles.roleBadge} data-testid={testIds.dashboard.roleBadge}>
@@ -216,24 +235,30 @@ export default function RootsPage() {
         </span>
       </header>
 
-      {profile?.role === "artisan" && (
+      {(profile?.role === "artisan" || profile?.role === "superadmin") && (
         <section className={styles.surface} data-testid={testIds.dashboard.cards}>
           <div className={styles.sectionHeader}>
             <div>
-              <h2>My Roots</h2>
-              <p className={styles.muted}>Manage local experiences, service capacity, pricing, and timing.</p>
+              <h2>{profile?.role === "superadmin" ? "All Roots" : "My Roots"}</h2>
+              <p className={styles.muted}>
+                {profile?.role === "superadmin"
+                  ? "Review local experiences, service capacity, pricing, and timing across all artisans."
+                  : "Manage local experiences, service capacity, pricing, and timing."}
+              </p>
             </div>
-            <button
-              type="button"
-              className={styles.primary}
-              onClick={() => {
-                setEditingServiceId(null);
-                setServiceForm(defaultServiceForm);
-                setShowServiceModal(true);
-              }}
-            >
-              + Add Root
-            </button>
+            {profile?.role === "artisan" && (
+              <button
+                type="button"
+                className={styles.primary}
+                onClick={() => {
+                  setEditingServiceId(null);
+                  setServiceForm(defaultServiceForm);
+                  setShowServiceModal(true);
+                }}
+              >
+                + Add Root
+              </button>
+            )}
           </div>
 
           {services.length === 0 ? (
@@ -242,6 +267,13 @@ export default function RootsPage() {
             <div className={styles.stack}>
               {services.map((service) => (
                 <article key={service.id} className={styles.card}>
+                  {service.photos?.[0] && (
+                    <img
+                      className={styles.thumbnail}
+                      src={mediaUrl(service.photos[0])}
+                      alt=""
+                    />
+                  )}
                   <div>
                     <h3>{service.service_description}</h3>
                     <p className={styles.muted}>{service.service_category}</p>
@@ -252,26 +284,28 @@ export default function RootsPage() {
                       {service.place_name || "Location pending"} · {toPrettyTime(service.service_window_start)}
                     </p>
                   </div>
-                  <div className={styles.iconActions}>
-                    <button
-                      type="button"
-                      className={styles.iconButton}
-                      title="Edit root"
-                      disabled={busyId === service.id}
-                      onClick={() => handleEditService(service)}
-                    >
-                      <EditIcon />
-                    </button>
-                    <button
-                      type="button"
-                      className={styles.iconButton}
-                      title="Delete root"
-                      disabled={busyId === service.id}
-                      onClick={() => handleDeleteService(service.id)}
-                    >
-                      <DeleteIcon />
-                    </button>
-                  </div>
+                  {profile?.role === "artisan" && (
+                    <div className={styles.iconActions}>
+                      <button
+                        type="button"
+                        className={styles.iconButton}
+                        title="Edit root"
+                        disabled={busyId === service.id}
+                        onClick={() => handleEditService(service)}
+                      >
+                        <EditIcon />
+                      </button>
+                      <button
+                        type="button"
+                        className={styles.iconButton}
+                        title="Delete root"
+                        disabled={busyId === service.id}
+                        onClick={() => handleDeleteService(service.id)}
+                      >
+                        <DeleteIcon />
+                      </button>
+                    </div>
+                  )}
                 </article>
               ))}
             </div>
@@ -354,6 +388,20 @@ export default function RootsPage() {
                 value={serviceForm.time}
                 onChange={(event) =>
                   setServiceForm((prev) => ({ ...prev, time: event.target.value }))
+                }
+              />
+            </label>
+
+            <label className={styles.field}>
+              Image
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(event) =>
+                  setServiceForm((prev) => ({
+                    ...prev,
+                    photoFile: event.target.files?.[0] || null,
+                  }))
                 }
               />
             </label>
