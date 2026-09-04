@@ -17,12 +17,15 @@ htmlcov/
 *.db
 *.sqlite
 *.sqlite3
+/data/
 
 # Node / Playwright
 node_modules/
 qa/node_modules/
 qa/playwright-report/
 qa/test-results/
+.playwright-mcp/
+*.log
 
 # Build artifacts
 dist/

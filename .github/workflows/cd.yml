@@ -1,0 +1,29 @@
+name: CD
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_environment:
+        description: "Target environment"
+        type: choice
+        options:
+          - Dev
+          - QA
+          - UAT
+          - Prod
+        default: Dev
+        required: true
+
+jobs:
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.target_environment }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Deploy placeholder
+        run: |
+          echo "Deploying to ${{ inputs.target_environment }}"
+          echo "TODO: Add real deployment steps here."

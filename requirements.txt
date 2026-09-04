@@ -6,6 +6,9 @@ passlib[bcrypt]
 pydantic
 pytest
 pytest-cov
+httpx
 email-validator
 bcrypt==4.3.0
 playwright
+gunicorn
+python-multipart

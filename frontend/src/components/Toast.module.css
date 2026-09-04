@@ -1,0 +1,23 @@
+.toast {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  background: var(--color-moss);
+  color: #fff;
+  padding: 0.9rem 1.3rem;
+  border-radius: 12px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.2);
+  font-weight: 600;
+  z-index: 100;
+}
+
+.error {
+  background: var(--color-error);
+}
+
+@media (max-width: 720px) {
+  .toast {
+    left: 1.5rem;
+    right: 1.5rem;
+  }
+}
